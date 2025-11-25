@@ -8,11 +8,15 @@ import (
 
 func UserRoutes(router *gin.RouterGroup, controller user.IUserController) {
 	u := router.Group("/user")
-	u.Use(middlewares.AuthJWTMiddleware())
 	{
 		u.POST("/", controller.NewUser)
-		u.GET("/", controller.GetAllUsers)
+
 		u.GET("/:id", controller.GetUsersByID)
+	}
+
+	u.Use(middlewares.AuthJWTMiddleware())
+	{
+		u.GET("/", controller.GetAllUsers)
 		u.PUT("/:id", controller.UpdateUser)
 		u.DELETE("/:id", controller.DeleteUser)
 		u.GET("/search", controller.SearchPaginated)

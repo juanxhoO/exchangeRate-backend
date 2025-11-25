@@ -19,5 +19,6 @@ func ApplicationRouter(router *gin.Engine, appContext *di.ApplicationContext) {
 
 	AuthRoutes(v1, appContext.AuthController)
 	UserRoutes(v1, appContext.UserController)
-	MedicineRoutes(v1, appContext.MedicineController)
+	ExchangerRoutes(v1, appContext.ExchangerController)
+	CurrencyRoutes(v1, appContext.CurrencyController)
 }

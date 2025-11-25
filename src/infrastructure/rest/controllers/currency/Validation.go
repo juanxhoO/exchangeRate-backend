@@ -1,4 +1,4 @@
-package medicine
+package currency
 
 import (
 	"errors"
@@ -18,10 +18,10 @@ func updateValidation(request map[string]any) error {
 	}
 
 	validationMap := map[string]string{
-		"name":        "omitempty,gt=3,lt=100",
-		"description": "omitempty,gt=3,lt=100",
-		"ean_code":    "omitempty,gt=3,lt=100",
-		"laboratory":  "omitempty,gt=3,lt=100",
+		"user_name": "omitempty,gt=3,lt=100",
+		"email":     "omitempty,email",
+		"firstName": "omitempty,gt=1,lt=100",
+		"lastName":  "omitempty,gt=1,lt=100",
 	}
 
 	validate := validator.New()
@@ -37,7 +37,7 @@ func updateValidation(request map[string]any) error {
 					validatorErr := errValidate.(validator.ValidationErrors)
 					errorsValidation = append(
 						errorsValidation,
-						fmt.Sprintf("%s do not satisfy condition %v=%v", k, validatorErr[0].Tag(), validatorErr[0].Param()),
+						fmt.Sprintf("%s does not satisfy condition %v=%v", k, validatorErr[0].Tag(), validatorErr[0].Param()),
 					)
 				}
 			}

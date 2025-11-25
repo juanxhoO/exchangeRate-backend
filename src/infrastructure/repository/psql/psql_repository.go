@@ -5,8 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
+
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
-	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/medicine"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -28,13 +29,15 @@ type DatabaseConfig struct {
 // loadDatabaseConfig loads database configuration from environment variables
 // Returns error if any required environment variable is missing
 func loadDatabaseConfig() (DatabaseConfig, error) {
+	// Load .env file
+	_ = godotenv.Load()
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	sslMode := os.Getenv("DB_SSLMODE")
-
+	println(host)
 	// Check for missing required environment variables
 	var missingVars []string
 	if host == "" {
@@ -147,10 +150,9 @@ func (r *PSQLRepository) InitDatabase() error {
 func (r *PSQLRepository) MigrateEntitiesGORM() error {
 	// Import the models to register them with GORM
 	userModel := &user.User{}
-	medicineModel := &medicine.Medicine{}
 
 	// Auto migrate the models to create/update tables
-	err := r.DB.AutoMigrate(userModel, medicineModel)
+	err := r.DB.AutoMigrate(userModel)
 	if err != nil {
 		r.Logger.Error("Error migrating database entities", zap.Error(err))
 		return err

@@ -16,6 +16,7 @@ type User struct {
 	HashPassword string
 	Password     string
 	CreatedAt    time.Time
+	Role         string
 	UpdatedAt    time.Time
 }
 
