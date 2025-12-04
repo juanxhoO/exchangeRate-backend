@@ -19,6 +19,7 @@ type User struct {
 	FirstName    string    `gorm:"column:first_name"`
 	LastName     string    `gorm:"column:last_name"`
 	Status       bool      `gorm:"column:status"`
+	Role         domainUser.Role    `gorm:"column:role"`
 	HashPassword string    `gorm:"column:hash_password"`
 	CreatedAt    time.Time `gorm:"autoCreateTime:mili"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime:mili"`
@@ -30,6 +31,7 @@ func (User) TableName() string {
 
 var ColumnsUserMapping = map[string]string{
 	"id":           "id",
+	"role":         "role",
 	"userName":     "user_name",
 	"email":        "email",
 	"firstName":    "first_name",

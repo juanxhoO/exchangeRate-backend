@@ -23,7 +23,7 @@ type NewUserRequest struct {
 	FirstName string `json:"firstName" binding:"required"`
 	LastName  string `json:"lastName" binding:"required"`
 	Password  string `json:"password" binding:"required"`
-	Role      string `json:"role" binding:"required"`
+	Role      domainUser.Role `json:"role" binding:"required"`
 }
 
 type ResponseUser struct {
@@ -32,6 +32,7 @@ type ResponseUser struct {
 	Email     string    `json:"email"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
+	Role      domainUser.Role     	`json:"role"`
 	Status    bool      `json:"status"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty"`
@@ -271,6 +272,7 @@ func (c *UserController) SearchByProperty(ctx *gin.Context) {
 	allowed := map[string]bool{
 		"userName":  true,
 		"email":     true,
+		"role":      true,
 		"firstName": true,
 		"lastName":  true,
 		"status":    true,
@@ -303,6 +305,7 @@ func domainToResponseMapper(domainUser *domainUser.User) *ResponseUser {
 		Email:     domainUser.Email,
 		FirstName: domainUser.FirstName,
 		LastName:  domainUser.LastName,
+		Role:      domainUser.Role,
 		Status:    domainUser.Status,
 		CreatedAt: domainUser.CreatedAt,
 		UpdatedAt: domainUser.UpdatedAt,
@@ -322,6 +325,7 @@ func toUsecaseMapper(req *NewUserRequest) *domainUser.User {
 		UserName:  req.UserName,
 		Email:     req.Email,
 		FirstName: req.FirstName,
+		Role:      req.Role,
 		LastName:  req.LastName,
 		Password:  req.Password,
 	}

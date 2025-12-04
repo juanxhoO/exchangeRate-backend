@@ -6,6 +6,13 @@ import (
 	"github.com/gbrayhan/microservices-go/src/domain"
 )
 
+type Role string
+
+const (
+	RoleAdmin Role = "ADMIN"
+	RoleSubscriber Role = "SUBSCRIBER"
+)
+
 type User struct {
 	ID           int
 	UserName     string
@@ -16,9 +23,10 @@ type User struct {
 	HashPassword string
 	Password     string
 	CreatedAt    time.Time
-	Role         string
+	Role         Role
 	UpdatedAt    time.Time
 }
+
 
 type SearchResultUser struct {
 	Data       *[]User

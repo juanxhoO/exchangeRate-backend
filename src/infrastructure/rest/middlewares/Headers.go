@@ -3,7 +3,7 @@ package middlewares
 import "github.com/gin-gonic/gin"
 
 func CommonHeaders(c *gin.Context) {
-	c.Header("Access-Control-Allow-Origin", "*")
+	//c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Credentials", "true")
 	c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, DELETE, GET, PUT")
 	c.Header("Access-Control-Allow-Headers",
