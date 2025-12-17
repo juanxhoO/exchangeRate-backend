@@ -9,6 +9,9 @@ func AuthRoutes(router *gin.RouterGroup, controller authController.IAuthControll
 	routerAuth := router.Group("/auth")
 	{
 		routerAuth.POST("/login", controller.Login)
+		//routerAuth.POST("/reset-password", controller.ResetPassword)
+		routerAuth.POST("/register", controller.Register)
+		//routerAuth.POST("/forgot-password", controller.ForgotPassword)
 		routerAuth.POST("/access-token", controller.GetAccessTokenByRefreshToken)
 	}
 }

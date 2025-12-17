@@ -13,9 +13,9 @@ import (
 
 type Exchanger struct {
 	ID        int       `gorm:"primaryKey"`
-	Name      string    `gorm:"column:user_name;unique"`
-	ApiKey    string    `gorm:"unique"`
-	IsActive  bool      `gorm:"unique"`
+	Name      string    `gorm:"column:name;"`
+	ApiKey    string    `gorm:"column:api_key;unique"`
+	IsActive  bool      `gorm:"column:is_active"`
 	CreatedAt time.Time `gorm:"autoCreateTime:mili"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime:mili"`
 }
@@ -26,12 +26,9 @@ func (Exchanger) TableName() string {
 
 var ColumnsUserMapping = map[string]string{
 	"id":           "id",
-	"userName":     "user_name",
-	"email":        "email",
-	"firstName":    "first_name",
-	"lastName":     "last_name",
-	"status":       "status",
-	"hashPassword": "hash_password",
+	"userName":     "name",
+	"apiKey":       "api_key",
+	"isActive":     "is_active",
 	"createdAt":    "created_at",
 	"updatedAt":    "updated_at",
 }
@@ -57,20 +54,20 @@ func NewUserRepository(db *gorm.DB, loggerInstance *logger.Logger) ExchangerRepo
 func (r *Repository) GetAll() (*[]domainExchanger.Exchanger, error) {
 	var users []Exchanger
 	if err := r.DB.Find(&users).Error; err != nil {
-		r.Logger.Error("Error getting all users", zap.Error(err))
+		r.Logger.Error("Error getting all Exchangers", zap.Error(err))
 		return nil, domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
 	}
-	r.Logger.Info("Successfully retrieved all users", zap.Int("count", len(users)))
+	r.Logger.Info("Successfully retrieved all Exchangers", zap.Int("count", len(users)))
 	return arrayToDomainMapper(&users), nil
 }
 
-func (r *Repository) Create(userDomain *domainExchanger.Exchanger) (*domainExchanger.Exchanger, error) {
-	r.Logger.Info("Creating new user", zap.String("email", userDomain.Name))
-	userRepository := fromDomainMapper(userDomain)
-	txDb := r.DB.Create(userRepository)
+func (r *Repository) Create(exchangerDomain *domainExchanger.Exchanger) (*domainExchanger.Exchanger, error) {
+	r.Logger.Info("Creating new Exchanger in database", zap.String("name", exchangerDomain.Name))
+	exchangerRepository := fromDomainMapper(exchangerDomain)
+	txDb := r.DB.Create(exchangerRepository)
 	err := txDb.Error
 	if err != nil {
-		r.Logger.Error("Error creating user", zap.Error(err), zap.String("email", userDomain.Name))
+		r.Logger.Error("Error creating Exchanger", zap.Error(err), zap.String("name", exchangerDomain.Name))
 		byteErr, _ := json.Marshal(err)
 		var newError domainErrors.GormErr
 		errUnmarshal := json.Unmarshal(byteErr, &newError)
@@ -85,8 +82,8 @@ func (r *Repository) Create(userDomain *domainExchanger.Exchanger) (*domainExcha
 			err = domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
 		}
 	}
-	r.Logger.Info("Successfully created user", zap.String("email", userDomain.Name), zap.Int("id", userRepository.ID))
-	return userRepository.toDomainMapper(), err
+	r.Logger.Info("Successfully created Exchanger", zap.String("name", exchangerDomain.Name), zap.Int("id", exchangerRepository.ID))
+	return exchangerRepository.toDomainMapper(), err
 }
 
 func (r *Repository) GetByID(id int) (*domainExchanger.Exchanger, error) {

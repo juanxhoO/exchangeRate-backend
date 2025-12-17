@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/gbrayhan/microservices-go/src/domain"
 	userDomain "github.com/gbrayhan/microservices-go/src/domain/user"
+	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	"go.uber.org/zap"
@@ -49,6 +50,25 @@ func (s *UserUseCase) GetByEmail(email string) (*userDomain.User, error) {
 
 func (s *UserUseCase) Create(newUser *userDomain.User) (*userDomain.User, error) {
 	s.Logger.Info("Creating new user", zap.String("email", newUser.Email))
+	existingEmail, err := s.userRepository.GetByEmail(newUser.Email)
+if err != nil {
+	return nil, err
+}
+
+if existingEmail != nil {
+	return nil, domainErrors.NewResourceAlreadyExists("email")
+}
+
+	//Check if username already exists
+
+existingUsername, err := s.userRepository.GetByUserName(newUser.UserName)
+if err != nil {
+	return nil, err
+}
+	if existingUsername != nil {
+		return nil, domainErrors.NewResourceAlreadyExists("username")
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
 	if err != nil {
 		s.Logger.Error("Error hashing password", zap.Error(err))

@@ -48,6 +48,7 @@ type UserRepositoryInterface interface {
 	Create(userDomain *domainUser.User) (*domainUser.User, error)
 	GetByID(id int) (*domainUser.User, error)
 	GetByEmail(email string) (*domainUser.User, error)
+	GetByUserName(userName string) (*domainUser.User, error)
 	Update(id int, userMap map[string]interface{}) (*domainUser.User, error)
 	Delete(id int) error
 	SearchPaginated(filters domain.DataFilters) (*domainUser.SearchResultUser, error)
@@ -121,16 +122,31 @@ func (r *Repository) GetByEmail(email string) (*domainUser.User, error) {
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.Logger.Warn("User not found", zap.String("email", email))
-			err = domainErrors.NewAppErrorWithType(domainErrors.NotFound)
-		} else {
-			r.Logger.Error("Error getting user by email", zap.Error(err), zap.String("email", email))
-			err = domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
+			return nil, nil
 		}
-		return &domainUser.User{}, err
+		r.Logger.Error("Error getting user by email", zap.Error(err), zap.String("email", email))
+		return nil, domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
 	}
 	r.Logger.Info("Successfully retrieved user by email", zap.String("email", email))
 	return user.toDomainMapper(), nil
 }
+
+
+func (r *Repository) GetByUserName(userName string) (*domainUser.User, error) {
+	var user User
+	err := r.DB.Where("user_name = ?", userName).First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.Logger.Warn("User not found", zap.String("user_name", userName))
+		return nil, nil
+		}
+				r.Logger.Error("Error getting user by user_name", zap.Error(err), zap.String("user_name", userName))
+		return nil,domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
+	}
+	r.Logger.Info("Successfully retrieved user by user_name", zap.String("user_name", userName))
+	return user.toDomainMapper(), nil
+}
+
 
 func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainUser.User, error) {
 	var userObj User

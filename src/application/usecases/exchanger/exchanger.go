@@ -39,13 +39,6 @@ func (s *ExchangerUseCase) GetByID(id int) (*exchangerDomain.Exchanger, error) {
 
 func (s *ExchangerUseCase) Create(newUser *exchangerDomain.Exchanger) (*exchangerDomain.Exchanger, error) {
 	s.Logger.Info("Creating new user", zap.String("email", newUser.Name))
-	// hash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
-	// if err != nil {
-	// 	s.Logger.Error("Error hashing password", zap.Error(err))
-	// 	return &exchangerDomain.Exchanger{}, err
-	// }
-	// newUser.HashPassword = string(hash)
-
 	newUser.IsActive = true
 
 	return s.exchangerRepository.Create(newUser)

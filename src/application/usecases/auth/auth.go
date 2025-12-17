@@ -14,6 +14,7 @@ import (
 )
 
 type IAuthUseCase interface {
+	Register(newUser *domainUser.User) (*domainUser.User, error)
 	Login(email, password string) (*domainUser.User, *AuthTokens, error)
 	AccessTokenByRefreshToken(refreshToken string) (*domainUser.User, *AuthTokens, error)
 }
@@ -77,6 +78,42 @@ func (s *AuthUseCase) Login(email, password string) (*domainUser.User, *AuthToke
 
 	s.Logger.Info("User login successful", zap.String("email", email), zap.Int("userID", user.ID))
 	return user, authTokens, nil
+}
+
+func (s *AuthUseCase) Register(newUser *domainUser.User) (*domainUser.User, error) {
+	s.Logger.Info("registering new user", zap.String("email", newUser.Email))
+	newUser.Role = "SUBSCRIBER"
+
+	existingUsername, err := s.UserRepository.GetByUserName(newUser.UserName)
+	if err != nil {
+		return nil, err
+	}
+	if existingUsername != nil {
+		return nil, domainErrors.NewResourceAlreadyExists("username")
+	}
+
+	existingEmail, err := s.UserRepository.GetByEmail(newUser.Email)
+	if err != nil {
+		return nil, err
+	}
+	if existingEmail != nil {
+		return nil, domainErrors.NewResourceAlreadyExists("email")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		s.Logger.Error("Error hashing password", zap.Error(err))
+		return &domainUser.User{}, err
+	}
+	newUser.HashPassword = string(hash)
+	newUser.Status = true
+
+	user, err := s.UserRepository.Create(newUser)
+	if err != nil {
+		s.Logger.Error("Error creating user", zap.Error(err), zap.String("email", newUser.Email))
+		return nil, err
+	}
+	return user, nil
 }
 
 func (s *AuthUseCase) AccessTokenByRefreshToken(refreshToken string) (*domainUser.User, *AuthTokens, error) {

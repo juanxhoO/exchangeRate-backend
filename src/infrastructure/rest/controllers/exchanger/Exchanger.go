@@ -16,16 +16,16 @@ import (
 
 // Structures
 type NewExchangerRequest struct {
-	Name     string `json:"user" binding:"required"`
-	ApiKey   string `json:"email" binding:"required"`
-	IsActive bool   `json:"firstName" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	ApiKey   string `json:"apiKey" binding:"required"`
+	IsActive bool   `json:"isActive"`
 }
 
 type ResponseUser struct {
 	ID        int       `json:"id"`
-	Name      string    `json:"user"`
-	IsActive  bool      `json:"email"`
-	ApiKey    string    `json:"firstName"`
+	Name      string    `json:"name"`
+	IsActive  bool      `json:"isActive"`
+	ApiKey    string    `json:"apiKey"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty"`
 }
@@ -48,22 +48,22 @@ func NewExchangerController(exchangerService domainExchanger.IExchangerService, 
 }
 
 func (c *ExchangerController) NewExchanger(ctx *gin.Context) {
-	c.Logger.Info("Creating new user")
+	c.Logger.Info("Creating new Exchanger")
 	var request NewExchangerRequest
 	if err := controllers.BindJSON(ctx, &request); err != nil {
-		c.Logger.Error("Error binding JSON for new user", zap.Error(err))
+		c.Logger.Error("Error binding JSON for new exchanger", zap.Error(err))
 		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
 		_ = ctx.Error(appError)
 		return
 	}
 	userModel, err := c.exchangerService.Create(toUsecaseMapper(&request))
 	if err != nil {
-		c.Logger.Error("Error creating user", zap.Error(err), zap.String("email", request.Name))
+		c.Logger.Error("Error creating exchanger", zap.Error(err), zap.String("name", request.Name))
 		_ = ctx.Error(err)
 		return
 	}
 	userResponse := domainToResponseMapper(userModel)
-	c.Logger.Info("User created successfully", zap.String("email", request.Name), zap.Int("id", userModel.ID))
+	c.Logger.Info("Exchanger created successfully", zap.String("name", request.Name), zap.Int("id", userModel.ID))
 	ctx.JSON(http.StatusOK, userResponse)
 }
 

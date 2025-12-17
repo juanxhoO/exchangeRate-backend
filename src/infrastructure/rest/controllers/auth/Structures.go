@@ -20,6 +20,18 @@ type UserData struct {
 	ID        int    `json:"id"`
 }
 
+type RegisterRequest struct {
+	Email     string `json:"email" binding:"required"`
+	Password  string `json:"password" binding:"required"`
+	FirstName string `json:"firstName" binding:"required"`
+	LastName  string `json:"lastName" binding:"required"`
+	UserName  string `json:"user" binding:"required"`
+}
+
+type RegisterResponse struct {
+	Data UserData `json:"data"`
+}
+
 type SecurityData struct {
 	JWTAccessToken            string    `json:"jwtAccessToken"`
 	JWTRefreshToken           string    `json:"jwtRefreshToken"`

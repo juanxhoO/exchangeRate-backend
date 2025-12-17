@@ -5,6 +5,7 @@ import (
 
 	useCaseAuth "github.com/gbrayhan/microservices-go/src/application/usecases/auth"
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
+	domainUser "github.com/gbrayhan/microservices-go/src/domain/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/rest/controllers"
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 
 type IAuthController interface {
 	Login(ctx *gin.Context)
+	Register(ctx *gin.Context)
 	GetAccessTokenByRefreshToken(ctx *gin.Context)
 }
 
@@ -66,6 +68,38 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+func (c *AuthController) Register(ctx *gin.Context) {
+	c.Logger.Info("User registration request")
+	var request RegisterRequest
+	if err := controllers.BindJSON(ctx, &request); err != nil {
+		c.Logger.Error("Error binding JSON for registration", zap.Error(err))
+		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
+		_ = ctx.Error(appError)
+		return
+	}
+
+	user, err := c.authUseCase.Register(toUsecaseMapper(&request))
+	if err != nil {
+		c.Logger.Error("Registration failed", zap.Error(err), zap.String("email", request.Email))
+		_ = ctx.Error(err)
+		return
+	}
+
+	response := RegisterResponse{
+		Data: UserData{
+			UserName:  user.UserName,
+			Email:     user.Email,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Status:    user.Status,
+			ID:        user.ID,
+		},
+	}
+
+	c.Logger.Info("Registration successful", zap.String("email", request.Email), zap.Int("userID", user.ID))
+	ctx.JSON(http.StatusOK, response)
+}
+
 func (c *AuthController) GetAccessTokenByRefreshToken(ctx *gin.Context) {
 	c.Logger.Info("Token refresh request")
 	var request AccessTokenRequest
@@ -102,4 +136,14 @@ func (c *AuthController) GetAccessTokenByRefreshToken(ctx *gin.Context) {
 
 	c.Logger.Info("Token refresh successful", zap.Int("userID", domainUser.ID))
 	ctx.JSON(http.StatusOK, response)
+}
+
+func toUsecaseMapper(req *RegisterRequest) *domainUser.User {
+	return &domainUser.User{
+		UserName:  req.UserName,
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Password:  req.Password,
+	}
 }

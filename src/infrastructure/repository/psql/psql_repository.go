@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/exchanger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -150,9 +151,10 @@ func (r *PSQLRepository) InitDatabase() error {
 func (r *PSQLRepository) MigrateEntitiesGORM() error {
 	// Import the models to register them with GORM
 	userModel := &user.User{}
+	exchangerModel := &exchanger.Exchanger{}
 
 	// Auto migrate the models to create/update tables
-	err := r.DB.AutoMigrate(userModel)
+	err := r.DB.AutoMigrate(userModel, exchangerModel)
 	if err != nil {
 		r.Logger.Error("Error migrating database entities", zap.Error(err))
 		return err
