@@ -1,9 +1,12 @@
 package exchanger
 
 import (
+	"os"
+
 	exchangerDomain "github.com/gbrayhan/microservices-go/src/domain/exchanger"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/exchanger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/security"
 	"go.uber.org/zap"
 )
 
@@ -17,12 +20,14 @@ type IExchangerUseCase interface {
 
 type ExchangerUseCase struct {
 	exchangerRepository exchanger.ExchangerRepositoryInterface
+	apiService          security.IAPIService
 	Logger              *logger.Logger
 }
 
-func NewExchangerUseCase(exchangerRepository exchanger.ExchangerRepositoryInterface, logger *logger.Logger) IExchangerUseCase {
+func NewExchangerUseCase(exchangerRepository exchanger.ExchangerRepositoryInterface, apiService security.IAPIService, logger *logger.Logger) IExchangerUseCase {
 	return &ExchangerUseCase{
 		exchangerRepository: exchangerRepository,
+		apiService:          apiService,
 		Logger:              logger,
 	}
 }
@@ -37,11 +42,16 @@ func (s *ExchangerUseCase) GetByID(id int) (*exchangerDomain.Exchanger, error) {
 	return s.exchangerRepository.GetByID(id)
 }
 
-func (s *ExchangerUseCase) Create(newUser *exchangerDomain.Exchanger) (*exchangerDomain.Exchanger, error) {
-	s.Logger.Info("Creating new user", zap.String("email", newUser.Name))
-	newUser.IsActive = true
-
-	return s.exchangerRepository.Create(newUser)
+func (s *ExchangerUseCase) Create(newExchanger *exchangerDomain.Exchanger) (*exchangerDomain.Exchanger, error) {
+	s.Logger.Info("Creating new user", zap.String("email", newExchanger.Name))
+	//Encrypt  the apiKey
+	key := os.Getenv("SECRET_API_KEY_GENERATOR")
+	var err error
+	newExchanger.ApiKey, err = s.apiService.EncryptApiKey(newExchanger.ApiKey, []byte(key))
+	if err != nil {
+		return nil, err
+	}
+	return s.exchangerRepository.Create(newExchanger)
 }
 
 func (s *ExchangerUseCase) Delete(id int) error {

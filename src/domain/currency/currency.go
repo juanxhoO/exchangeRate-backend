@@ -14,18 +14,9 @@ type Currency struct {
 	UpdatedAt time.Time
 }
 
-type SearchResultUser struct {
-	Data       *[]Currency
-	Total      int64
-	Page       int
-	PageSize   int
-	TotalPages int
-}
-
 type ICurrencyService interface {
 	GetAll() (*[]Currency, error)
 	GetByID(id int) (*Currency, error)
-	Create(newUser *Currency) (*Currency, error)
 	Delete(id int) error
-	Update(id int, userMap map[string]interface{}) (*Currency, error)
+	UpdateExchanges() (any, error)
 }

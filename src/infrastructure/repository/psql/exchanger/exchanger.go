@@ -14,6 +14,7 @@ import (
 type Exchanger struct {
 	ID        int       `gorm:"primaryKey"`
 	Name      string    `gorm:"column:name;"`
+	Url       string    `gorm:"column:url;"`
 	ApiKey    string    `gorm:"column:api_key;unique"`
 	IsActive  bool      `gorm:"column:is_active"`
 	CreatedAt time.Time `gorm:"autoCreateTime:mili"`
@@ -25,12 +26,13 @@ func (Exchanger) TableName() string {
 }
 
 var ColumnsUserMapping = map[string]string{
-	"id":           "id",
-	"userName":     "name",
-	"apiKey":       "api_key",
-	"isActive":     "is_active",
-	"createdAt":    "created_at",
-	"updatedAt":    "updated_at",
+	"id":        "id",
+	"userName":  "name",
+	"apiKey":    "api_key",
+	"isActive":  "is_active",
+	"url":       "url",
+	"createdAt": "created_at",
+	"updatedAt": "updated_at",
 }
 
 // UserRepositoryInterface defines the interface for user repository operations
@@ -179,6 +181,7 @@ func (u *Exchanger) toDomainMapper() *domainExchanger.Exchanger {
 	return &domainExchanger.Exchanger{
 		ID:        u.ID,
 		Name:      u.Name,
+		Url:       u.Url,
 		IsActive:  u.IsActive,
 		ApiKey:    u.ApiKey,
 		CreatedAt: u.CreatedAt,
@@ -190,6 +193,7 @@ func fromDomainMapper(u *domainExchanger.Exchanger) *Exchanger {
 	return &Exchanger{
 		ID:        u.ID,
 		Name:      u.Name,
+		Url:       u.Url,
 		IsActive:  u.IsActive,
 		ApiKey:    u.ApiKey,
 		CreatedAt: u.CreatedAt,

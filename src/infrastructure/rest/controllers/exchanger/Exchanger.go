@@ -17,6 +17,7 @@ import (
 // Structures
 type NewExchangerRequest struct {
 	Name     string `json:"name" binding:"required"`
+	Url      string `json:"url" binding:"required"`
 	ApiKey   string `json:"apiKey" binding:"required"`
 	IsActive bool   `json:"isActive"`
 }
@@ -25,6 +26,7 @@ type ResponseUser struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`
 	IsActive  bool      `json:"isActive"`
+	Url       string    `json:"url"`
 	ApiKey    string    `json:"apiKey"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty"`
@@ -156,6 +158,7 @@ func domainToResponseMapper(domainExchanger *domainExchanger.Exchanger) *Respons
 	return &ResponseUser{
 		ID:        domainExchanger.ID,
 		Name:      domainExchanger.Name,
+		Url:       domainExchanger.Url,
 		IsActive:  domainExchanger.IsActive,
 		ApiKey:    domainExchanger.ApiKey,
 		CreatedAt: domainExchanger.CreatedAt,
@@ -174,6 +177,7 @@ func arrayDomainToResponseMapper(users *[]domainExchanger.Exchanger) *[]Response
 func toUsecaseMapper(req *NewExchangerRequest) *domainExchanger.Exchanger {
 	return &domainExchanger.Exchanger{
 		Name:     req.Name,
+		Url:      req.Url,
 		IsActive: req.IsActive,
 		ApiKey:   req.ApiKey,
 	}

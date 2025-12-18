@@ -57,6 +57,7 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 
 	// Initialize JWT service (manages its own configuration)
 	jwtService := security.NewJWTService()
+	apiService := security.NewAPIService()
 
 	// Initialize repositories with logger
 	userRepo := user.NewUserRepository(db, loggerInstance)
@@ -66,8 +67,8 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 	// Initialize use cases with logger
 	authUC := authUseCase.NewAuthUseCase(userRepo, jwtService, loggerInstance)
 	userUC := userUseCase.NewUserUseCase(userRepo, loggerInstance)
-	exchangerUC := exchangerUseCase.NewExchangerUseCase(exchangerRepo, loggerInstance)
-	currencyUC := currencyUseCase.NewCurrencyUseCase(currencyRepo, loggerInstance)
+	exchangerUC := exchangerUseCase.NewExchangerUseCase(exchangerRepo, apiService, loggerInstance)
+	currencyUC := currencyUseCase.NewCurrencyUseCase(currencyRepo, exchangerRepo, apiService, loggerInstance)
 
 	// Initialize controllers with logger
 	authController := authController.NewAuthController(authUC, loggerInstance)

@@ -9,7 +9,6 @@ import (
 	domainCurrency "github.com/gbrayhan/microservices-go/src/domain/currency"
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
-	"github.com/gbrayhan/microservices-go/src/infrastructure/rest/controllers"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -33,11 +32,10 @@ type ResponseUser struct {
 }
 
 type ICurrencyController interface {
-	NewCurrency(ctx *gin.Context)
 	GetAllCurrencies(ctx *gin.Context)
 	GetCurrenciesByID(ctx *gin.Context)
-	UpdateCurency(ctx *gin.Context)
 	DeleteCurrency(ctx *gin.Context)
+	UpdateExchanges(ctx *gin.Context)
 }
 
 type CurrencyController struct {
@@ -47,26 +45,6 @@ type CurrencyController struct {
 
 func NewCurrencyController(currencyService domainCurrency.ICurrencyService, loggerInstance *logger.Logger) ICurrencyController {
 	return &CurrencyController{currencyService: currencyService, Logger: loggerInstance}
-}
-
-func (c *CurrencyController) NewCurrency(ctx *gin.Context) {
-	c.Logger.Info("Creating new Currency")
-	var request NewCurrencyRequest
-	if err := controllers.BindJSON(ctx, &request); err != nil {
-		c.Logger.Error("Error binding JSON for new user", zap.Error(err))
-		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
-		_ = ctx.Error(appError)
-		return
-	}
-	userModel, err := c.currencyService.Create(toUsecaseMapper(&request))
-	if err != nil {
-		c.Logger.Error("Error creating user", zap.Error(err), zap.String("code", request.Code))
-		_ = ctx.Error(err)
-		return
-	}
-	userResponse := domainToResponseMapper(userModel)
-	c.Logger.Info("User created successfully", zap.String("code", request.Code), zap.Int("id", userModel.ID))
-	ctx.JSON(http.StatusOK, userResponse)
 }
 
 func (c *CurrencyController) GetAllCurrencies(ctx *gin.Context) {
@@ -80,6 +58,20 @@ func (c *CurrencyController) GetAllCurrencies(ctx *gin.Context) {
 	}
 	c.Logger.Info("Successfully retrieved all users", zap.Int("count", len(*users)))
 	ctx.JSON(http.StatusOK, arrayDomainToResponseMapper(users))
+}
+
+func (c *CurrencyController) UpdateExchanges(ctx *gin.Context) {
+	c.Logger.Info("Updating Exchanges")
+	_, err := c.currencyService.UpdateExchanges()
+	if err != nil {
+		c.Logger.Error("Error updating exchanges", zap.Error(err))
+		appError := domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
+		_ = ctx.Error(appError)
+		return
+	}
+
+	c.Logger.Info("Successfully updated exchanges")
+	ctx.JSON(http.StatusOK, gin.H{"message": "Exchanges updated successfully"})
 }
 
 func (c *CurrencyController) GetCurrenciesByID(ctx *gin.Context) {
@@ -99,39 +91,6 @@ func (c *CurrencyController) GetCurrenciesByID(ctx *gin.Context) {
 	}
 	c.Logger.Info("Successfully retrieved user by ID", zap.Int("id", userID))
 	ctx.JSON(http.StatusOK, domainToResponseMapper(user))
-}
-
-func (c *CurrencyController) UpdateCurency(ctx *gin.Context) {
-	userID, err := strconv.Atoi(ctx.Param("id"))
-	if err != nil {
-		c.Logger.Error("Invalid user ID parameter for update", zap.Error(err), zap.String("id", ctx.Param("id")))
-		appError := domainErrors.NewAppError(errors.New("param id is necessary"), domainErrors.ValidationError)
-		_ = ctx.Error(appError)
-		return
-	}
-	c.Logger.Info("Updating user", zap.Int("id", userID))
-	var requestMap map[string]any
-	err = controllers.BindJSONMap(ctx, &requestMap)
-	if err != nil {
-		c.Logger.Error("Error binding JSON for user update", zap.Error(err), zap.Int("id", userID))
-		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
-		_ = ctx.Error(appError)
-		return
-	}
-	err = updateValidation(requestMap)
-	if err != nil {
-		c.Logger.Error("Validation error for user update", zap.Error(err), zap.Int("id", userID))
-		_ = ctx.Error(err)
-		return
-	}
-	userUpdated, err := c.currencyService.Update(userID, requestMap)
-	if err != nil {
-		c.Logger.Error("Error updating user", zap.Error(err), zap.Int("id", userID))
-		_ = ctx.Error(err)
-		return
-	}
-	c.Logger.Info("User updated successfully", zap.Int("id", userID))
-	ctx.JSON(http.StatusOK, domainToResponseMapper(userUpdated))
 }
 
 func (c *CurrencyController) DeleteCurrency(ctx *gin.Context) {
