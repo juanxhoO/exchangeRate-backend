@@ -80,34 +80,97 @@ func (s *CurrencyUseCase) Delete(id int) error {
 	return s.currencyRepository.Delete(id)
 }
 
+type NormalizedRate struct {
+	Provider string
+	Base     string
+	Currency string
+	Rate     float64
+}
+
+func normalizeExchange(
+	provider string,
+	base string,
+	raw map[string]float64,
+) []NormalizedRate {
+	rates := make([]NormalizedRate, 0, len(raw))
+
+	for currency, rate := range raw {
+		rates = append(rates, NormalizedRate{
+			Provider: provider,
+			Base:     base,
+			Currency: currency,
+			Rate:     rate,
+		})
+	}
+
+	return rates
+}
+
 func (s *CurrencyUseCase) UpdateExchanges() (any, error) {
 	s.Logger.Info("Updating Exchanges in service")
 	exchangers, err := s.exchangeRepository.GetAll()
 	if err != nil {
 		return nil, err
 	}
-	//Fetch the data of each Exchanger and Unhash the api key
+
+	allRates := []NormalizedRate{}
+
 	for _, exchanger := range *exchangers {
 		//first unhash the api key
 		decodedApiKey, err := s.apiService.DecryptApiKey(exchanger.ApiKey, []byte(os.Getenv("SECRET_API_KEY_GENERATOR")))
 		if err != nil {
 			return nil, err
 		}
-		s.Logger.Info("Decoded Api Key", zap.String("apiKey", decodedApiKey))
-
 		//now i have to Fetch every exchanger and also unhash de api key to send
-
 		data, err := s.fetchExchangeData(exchanger.Url, decodedApiKey)
 		if err != nil {
 			return nil, err
 		}
 
-		s.Logger.Info(
-			"Exchange rates fetched",
-			zap.Any("rates", data),
-		)
+		normalizedRate := normalizeExchange(exchanger.Name, "USD", data)
+		allRates = append(allRates, normalizedRate...)
+		s.Logger.Info("Exchange rates fetched", zap.Any("rates", allRates))
 	}
 	return nil, nil
+}
+
+type AggregatedRate struct {
+	Base     string
+	Currency string
+	Rate     float64
+	Sources  int
+}
+
+func aggregateRates(rates []NormalizedRate) map[string]AggregatedRate {
+	acc := make(map[string]struct {
+		sum      float64
+		count    int
+		base     string
+		currency string
+	})
+
+	for _, r := range rates {
+		key := r.Base + "_" + r.Currency
+
+		v := acc[key]
+		v.sum += r.Rate
+		v.count++
+		v.base = r.Base
+		v.currency = r.Currency
+		acc[key] = v
+	}
+
+	result := make(map[string]AggregatedRate)
+
+	for key, v := range acc {
+		result[key] = AggregatedRate{
+			Base:     v.base,
+			Currency: v.currency,
+			Rate:     v.sum / float64(v.count),
+			Sources:  v.count,
+		}
+	}
+	return result
 }
 
 type ExchangeResponse struct {
