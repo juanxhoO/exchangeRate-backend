@@ -18,10 +18,10 @@ func updateValidation(request map[string]any) error {
 	}
 
 	validationMap := map[string]string{
-		"user_name": "omitempty,gt=3,lt=100",
-		"email":     "omitempty,email",
-		"firstName": "omitempty,gt=1,lt=100",
-		"lastName":  "omitempty,gt=1,lt=100",
+		"name":     "omitempty,gt=3,lt=100",
+		"apiKey":   "omitempty,gt=10,lt=200",
+		"url":      "omitempty,gt=1,lt=100",
+		"isActive": "omitempty,gt=1,lt=100",
 	}
 
 	validate := validator.New()

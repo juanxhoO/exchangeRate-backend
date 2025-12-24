@@ -182,6 +182,7 @@ func (s *CurrencyUseCase) fetchExchangeData(
 	apiKey string,
 ) (map[string]float64, error) {
 
+	s.Logger.Info("Fetching exchange data", zap.String("url", url+"?apikey="+apiKey))
 	req, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,

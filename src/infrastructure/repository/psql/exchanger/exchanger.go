@@ -125,6 +125,7 @@ func (r *Repository) GetByEmail(email string) (*domainExchanger.Exchanger, error
 func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainExchanger.Exchanger, error) {
 	var userObj Exchanger
 	userObj.ID = id
+	r.Logger.Info("Updating user", zap.Any("dsd", userMap))
 
 	// Map JSON field names to DB column names
 	updateData := make(map[string]interface{})
@@ -137,7 +138,7 @@ func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainExch
 	}
 
 	err := r.DB.Model(&userObj).
-		Select("user_name", "email", "first_name", "last_name", "status", "role").
+		Select("name", "is_active", "api_key", "url").
 		Updates(updateData).Error
 	if err != nil {
 		r.Logger.Error("Error updating user", zap.Error(err), zap.Int("id", id))

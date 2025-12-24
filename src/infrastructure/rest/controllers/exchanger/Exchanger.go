@@ -102,6 +102,7 @@ func (c *ExchangerController) GetExchangersById(ctx *gin.Context) {
 }
 
 func (c *ExchangerController) UpdateExchanger(ctx *gin.Context) {
+
 	userID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		c.Logger.Error("Invalid user ID parameter for update", zap.Error(err), zap.String("id", ctx.Param("id")))
@@ -112,24 +113,28 @@ func (c *ExchangerController) UpdateExchanger(ctx *gin.Context) {
 	c.Logger.Info("Updating user", zap.Int("id", userID))
 	var requestMap map[string]any
 	err = controllers.BindJSONMap(ctx, &requestMap)
+
 	if err != nil {
 		c.Logger.Error("Error binding JSON for user update", zap.Error(err), zap.Int("id", userID))
 		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
 		_ = ctx.Error(appError)
 		return
 	}
+
 	err = updateValidation(requestMap)
 	if err != nil {
 		c.Logger.Error("Validation error for user update", zap.Error(err), zap.Int("id", userID))
 		_ = ctx.Error(err)
 		return
 	}
+
 	userUpdated, err := c.exchangerService.Update(userID, requestMap)
 	if err != nil {
 		c.Logger.Error("Error updating user", zap.Error(err), zap.Int("id", userID))
 		_ = ctx.Error(err)
 		return
 	}
+
 	c.Logger.Info("User updated successfully", zap.Int("id", userID))
 	ctx.JSON(http.StatusOK, domainToResponseMapper(userUpdated))
 }
