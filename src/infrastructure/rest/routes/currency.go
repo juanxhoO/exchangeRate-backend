@@ -9,15 +9,13 @@ import (
 func CurrencyRoutes(router *gin.RouterGroup, controller currency.ICurrencyController) {
 	u := router.Group("/currency")
 	{
-		u.POST("/", controller.NewCurrency)
-
 		u.GET("/:id", controller.GetCurrenciesByID)
 	}
 
 	u.Use(middlewares.AuthJWTMiddleware())
 	{
 		u.GET("/", controller.GetAllCurrencies)
-		u.PUT("/:id", controller.UpdateCurency)
 		u.DELETE("/:id", controller.DeleteCurrency)
+		u.PUT("/rates", controller.UpdateExchanges)
 	}
 }

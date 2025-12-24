@@ -17,7 +17,7 @@ func UserRoutes(router *gin.RouterGroup, controller user.IUserController) {
 	u.Use(middlewares.AuthJWTMiddleware())
 	{
 		u.GET("/", controller.GetAllUsers)
-		u.PUT("/:id", controller.UpdateUser)
+		u.PATCH("/:id", controller.UpdateUser)
 		u.DELETE("/:id", controller.DeleteUser)
 		u.GET("/search", controller.SearchPaginated)
 		u.GET("/search-property", controller.SearchByProperty)

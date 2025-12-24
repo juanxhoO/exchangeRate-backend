@@ -13,7 +13,7 @@ func ExchangerRoutes(router *gin.RouterGroup, controller exchanger.IExchangerCon
 		u.GET("/:id", controller.GetExchangersById)
 		u.POST("/", controller.NewExchanger)
 		u.GET("/", controller.GetAllExchangers)
-		u.PUT("/:id", controller.UpdateExchanger)
+		u.PATCH("/:id", controller.UpdateExchanger)
 		u.DELETE("/:id", controller.DeleteExchanger)
 	}
 }

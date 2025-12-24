@@ -1,6 +1,10 @@
 package auth
 
-import "time"
+import (
+	"time"
+
+	"github.com/gbrayhan/microservices-go/src/domain/user"
+)
 
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required"`
@@ -12,12 +16,13 @@ type AccessTokenRequest struct {
 }
 
 type UserData struct {
-	UserName  string `json:"userName"`
-	Email     string `json:"email"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Status    bool   `json:"status"`
-	ID        int    `json:"id"`
+	Role      user.Role `json:"role"`
+	UserName  string    `json:"userName"`
+	Email     string    `json:"email"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName"`
+	Status    bool      `json:"status"`
+	ID        int       `json:"id"`
 }
 
 type RegisterRequest struct {

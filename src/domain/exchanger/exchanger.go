@@ -8,6 +8,7 @@ type Exchanger struct {
 	ID        int
 	Name      string
 	ApiKey    string
+	Url       string
 	IsActive  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time

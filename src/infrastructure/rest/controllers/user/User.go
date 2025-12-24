@@ -18,24 +18,24 @@ import (
 
 // Structures
 type NewUserRequest struct {
-	UserName  string `json:"user" binding:"required"`
-	Email     string `json:"email" binding:"required"`
-	FirstName string `json:"firstName" binding:"required"`
-	LastName  string `json:"lastName" binding:"required"`
-	Password  string `json:"password" binding:"required"`
+	UserName  string          `json:"user" binding:"required"`
+	Email     string          `json:"email" binding:"required"`
+	FirstName string          `json:"firstName" binding:"required"`
+	LastName  string          `json:"lastName" binding:"required"`
+	Password  string          `json:"password" binding:"required"`
 	Role      domainUser.Role `json:"role" binding:"required"`
 }
 
 type ResponseUser struct {
-	ID        int       `json:"id"`
-	UserName  string    `json:"user"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Role      domainUser.Role     	`json:"role"`
-	Status    bool      `json:"status"`
-	CreatedAt time.Time `json:"createdAt,omitempty"`
-	UpdatedAt time.Time `json:"updatedAt,omitempty"`
+	ID        int             `json:"id"`
+	UserName  string          `json:"user"`
+	Email     string          `json:"email"`
+	FirstName string          `json:"firstName"`
+	LastName  string          `json:"lastName"`
+	Role      domainUser.Role `json:"role"`
+	Status    bool            `json:"status"`
+	CreatedAt time.Time       `json:"createdAt,omitempty"`
+	UpdatedAt time.Time       `json:"updatedAt,omitempty"`
 }
 
 type IUserController interface {

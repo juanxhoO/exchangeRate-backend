@@ -13,16 +13,16 @@ import (
 )
 
 type User struct {
-	ID           int       `gorm:"primaryKey"`
-	UserName     string    `gorm:"column:user_name;unique"`
-	Email        string    `gorm:"unique"`
-	FirstName    string    `gorm:"column:first_name"`
-	LastName     string    `gorm:"column:last_name"`
-	Status       bool      `gorm:"column:status"`
-	Role         domainUser.Role    `gorm:"column:role"`
-	HashPassword string    `gorm:"column:hash_password"`
-	CreatedAt    time.Time `gorm:"autoCreateTime:mili"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime:mili"`
+	ID           int             `gorm:"primaryKey"`
+	UserName     string          `gorm:"column:user_name;unique"`
+	Email        string          `gorm:"unique"`
+	FirstName    string          `gorm:"column:first_name"`
+	LastName     string          `gorm:"column:last_name"`
+	Status       bool            `gorm:"column:status"`
+	Role         domainUser.Role `gorm:"column:role"`
+	HashPassword string          `gorm:"column:hash_password"`
+	CreatedAt    time.Time       `gorm:"autoCreateTime:mili"`
+	UpdatedAt    time.Time       `gorm:"autoUpdateTime:mili"`
 }
 
 func (User) TableName() string {
@@ -131,22 +131,20 @@ func (r *Repository) GetByEmail(email string) (*domainUser.User, error) {
 	return user.toDomainMapper(), nil
 }
 
-
 func (r *Repository) GetByUserName(userName string) (*domainUser.User, error) {
 	var user User
 	err := r.DB.Where("user_name = ?", userName).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.Logger.Warn("User not found", zap.String("user_name", userName))
-		return nil, nil
+			return nil, nil
 		}
-				r.Logger.Error("Error getting user by user_name", zap.Error(err), zap.String("user_name", userName))
-		return nil,domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
+		r.Logger.Error("Error getting user by user_name", zap.Error(err), zap.String("user_name", userName))
+		return nil, domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
 	}
 	r.Logger.Info("Successfully retrieved user by user_name", zap.String("user_name", userName))
 	return user.toDomainMapper(), nil
 }
-
 
 func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainUser.User, error) {
 	var userObj User
@@ -320,6 +318,7 @@ func (u *User) toDomainMapper() *domainUser.User {
 		ID:           u.ID,
 		UserName:     u.UserName,
 		Email:        u.Email,
+		Role:         u.Role,
 		FirstName:    u.FirstName,
 		LastName:     u.LastName,
 		Status:       u.Status,
@@ -334,6 +333,7 @@ func fromDomainMapper(u *domainUser.User) *User {
 		ID:           u.ID,
 		UserName:     u.UserName,
 		Email:        u.Email,
+		Role:         u.Role,
 		FirstName:    u.FirstName,
 		LastName:     u.LastName,
 		Status:       u.Status,

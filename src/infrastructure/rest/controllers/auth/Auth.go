@@ -53,6 +53,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 			Email:     domainUser.Email,
 			FirstName: domainUser.FirstName,
 			LastName:  domainUser.LastName,
+			Role:      domainUser.Role,
 			Status:    domainUser.Status,
 			ID:        domainUser.ID,
 		},
@@ -121,6 +122,7 @@ func (c *AuthController) GetAccessTokenByRefreshToken(ctx *gin.Context) {
 		Data: UserData{
 			UserName:  domainUser.UserName,
 			Email:     domainUser.Email,
+			Role:      domainUser.Role,
 			FirstName: domainUser.FirstName,
 			LastName:  domainUser.LastName,
 			Status:    domainUser.Status,

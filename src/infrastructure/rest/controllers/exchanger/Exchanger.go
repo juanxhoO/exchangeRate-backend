@@ -17,6 +17,7 @@ import (
 // Structures
 type NewExchangerRequest struct {
 	Name     string `json:"name" binding:"required"`
+	Url      string `json:"url" binding:"required"`
 	ApiKey   string `json:"apiKey" binding:"required"`
 	IsActive bool   `json:"isActive"`
 }
@@ -25,6 +26,7 @@ type ResponseUser struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`
 	IsActive  bool      `json:"isActive"`
+	Url       string    `json:"url"`
 	ApiKey    string    `json:"apiKey"`
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty"`
@@ -100,6 +102,7 @@ func (c *ExchangerController) GetExchangersById(ctx *gin.Context) {
 }
 
 func (c *ExchangerController) UpdateExchanger(ctx *gin.Context) {
+
 	userID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		c.Logger.Error("Invalid user ID parameter for update", zap.Error(err), zap.String("id", ctx.Param("id")))
@@ -110,24 +113,28 @@ func (c *ExchangerController) UpdateExchanger(ctx *gin.Context) {
 	c.Logger.Info("Updating user", zap.Int("id", userID))
 	var requestMap map[string]any
 	err = controllers.BindJSONMap(ctx, &requestMap)
+
 	if err != nil {
 		c.Logger.Error("Error binding JSON for user update", zap.Error(err), zap.Int("id", userID))
 		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
 		_ = ctx.Error(appError)
 		return
 	}
+
 	err = updateValidation(requestMap)
 	if err != nil {
 		c.Logger.Error("Validation error for user update", zap.Error(err), zap.Int("id", userID))
 		_ = ctx.Error(err)
 		return
 	}
+
 	userUpdated, err := c.exchangerService.Update(userID, requestMap)
 	if err != nil {
 		c.Logger.Error("Error updating user", zap.Error(err), zap.Int("id", userID))
 		_ = ctx.Error(err)
 		return
 	}
+
 	c.Logger.Info("User updated successfully", zap.Int("id", userID))
 	ctx.JSON(http.StatusOK, domainToResponseMapper(userUpdated))
 }
@@ -156,6 +163,7 @@ func domainToResponseMapper(domainExchanger *domainExchanger.Exchanger) *Respons
 	return &ResponseUser{
 		ID:        domainExchanger.ID,
 		Name:      domainExchanger.Name,
+		Url:       domainExchanger.Url,
 		IsActive:  domainExchanger.IsActive,
 		ApiKey:    domainExchanger.ApiKey,
 		CreatedAt: domainExchanger.CreatedAt,
@@ -174,6 +182,7 @@ func arrayDomainToResponseMapper(users *[]domainExchanger.Exchanger) *[]Response
 func toUsecaseMapper(req *NewExchangerRequest) *domainExchanger.Exchanger {
 	return &domainExchanger.Exchanger{
 		Name:     req.Name,
+		Url:      req.Url,
 		IsActive: req.IsActive,
 		ApiKey:   req.ApiKey,
 	}

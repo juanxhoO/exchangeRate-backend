@@ -7,6 +7,7 @@ import (
 
 	exchangerDomain "github.com/gbrayhan/microservices-go/src/domain/exchanger"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
+	security "github.com/gbrayhan/microservices-go/src/infrastructure/security"
 )
 
 type mockUserService struct {
@@ -45,7 +46,8 @@ func TestUserUseCase(t *testing.T) {
 
 	mockRepo := &mockUserService{}
 	logger := setupLogger(t)
-	useCase := NewExchangerUseCase(mockRepo, logger)
+	apiService := &security.APIService{}
+	useCase := NewExchangerUseCase(mockRepo, apiService, logger)
 
 	t.Run("Test GetAll", func(t *testing.T) {
 		mockRepo.getAllFn = func() (*[]exchangerDomain.Exchanger, error) {
@@ -145,7 +147,8 @@ func TestUserUseCase(t *testing.T) {
 func TestNewUserUseCase(t *testing.T) {
 	mockRepo := &mockUserService{}
 	loggerInstance := setupLogger(t)
-	useCase := NewExchangerUseCase(mockRepo, loggerInstance)
+	apiService := &security.APIService{}
+	useCase := NewExchangerUseCase(mockRepo, apiService, loggerInstance)
 	if reflect.TypeOf(useCase).String() != "*user.UserUseCase" {
 		t.Error("expected *user.UserUseCase type")
 	}

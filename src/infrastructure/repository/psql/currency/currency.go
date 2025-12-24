@@ -13,9 +13,9 @@ import (
 
 type Currency struct {
 	ID        int       `gorm:"primaryKey"`
-	Name      string    `gorm:"column:user_name;unique"`
-	Rate      float64   `gorm:"unique"`
-	Code      string    `gorm:"column:code"`
+	Name      string    `gorm:"column:currency_name;unique"`
+	Rate      float64   `gorm:"column:rate"`
+	Code      string    `gorm:"column:code;unique"`
 	Status    bool      `gorm:"column:status"`
 	CreatedAt time.Time `gorm:"autoCreateTime:mili"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime:mili"`
@@ -27,7 +27,7 @@ func (Currency) TableName() string {
 
 var ColumnsUserMapping = map[string]string{
 	"id":        "id",
-	"name":      "user_name",
+	"name":      "currency_name",
 	"rate":      "rate",
 	"code":      "code",
 	"status":    "status",
@@ -40,7 +40,6 @@ type CurrencyRepositoryInterface interface {
 	GetAll() (*[]domainCurrency.Currency, error)
 	Create(userDomain *domainCurrency.Currency) (*domainCurrency.Currency, error)
 	GetByID(id int) (*domainCurrency.Currency, error)
-	GetByEmail(email string) (*domainCurrency.Currency, error)
 	Update(id int, userMap map[string]interface{}) (*domainCurrency.Currency, error)
 	Delete(id int) error
 }
@@ -103,23 +102,6 @@ func (r *Repository) GetByID(id int) (*domainCurrency.Currency, error) {
 		return &domainCurrency.Currency{}, err
 	}
 	r.Logger.Info("Successfully retrieved user by ID", zap.Int("id", id))
-	return user.toDomainMapper(), nil
-}
-
-func (r *Repository) GetByEmail(email string) (*domainCurrency.Currency, error) {
-	var user Currency
-	err := r.DB.Where("email = ?", email).First(&user).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			r.Logger.Warn("User not found", zap.String("email", email))
-			err = domainErrors.NewAppErrorWithType(domainErrors.NotFound)
-		} else {
-			r.Logger.Error("Error getting user by email", zap.Error(err), zap.String("email", email))
-			err = domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
-		}
-		return &domainCurrency.Currency{}, err
-	}
-	r.Logger.Info("Successfully retrieved user by email", zap.String("email", email))
 	return user.toDomainMapper(), nil
 }
 

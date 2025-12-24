@@ -20,6 +20,7 @@ func updateValidation(request map[string]any) error {
 	validationMap := map[string]string{
 		"user_name": "omitempty,gt=3,lt=100",
 		"email":     "omitempty,email",
+		"role":      "omitempty,gt=6,lt=100",
 		"firstName": "omitempty,gt=1,lt=100",
 		"lastName":  "omitempty,gt=1,lt=100",
 	}

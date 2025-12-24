@@ -14,6 +14,7 @@ import (
 type Exchanger struct {
 	ID        int       `gorm:"primaryKey"`
 	Name      string    `gorm:"column:name;"`
+	Url       string    `gorm:"column:url;"`
 	ApiKey    string    `gorm:"column:api_key;unique"`
 	IsActive  bool      `gorm:"column:is_active"`
 	CreatedAt time.Time `gorm:"autoCreateTime:mili"`
@@ -25,12 +26,13 @@ func (Exchanger) TableName() string {
 }
 
 var ColumnsUserMapping = map[string]string{
-	"id":           "id",
-	"userName":     "name",
-	"apiKey":       "api_key",
-	"isActive":     "is_active",
-	"createdAt":    "created_at",
-	"updatedAt":    "updated_at",
+	"id":        "id",
+	"userName":  "name",
+	"apiKey":    "api_key",
+	"isActive":  "is_active",
+	"url":       "url",
+	"createdAt": "created_at",
+	"updatedAt": "updated_at",
 }
 
 // UserRepositoryInterface defines the interface for user repository operations
@@ -123,6 +125,7 @@ func (r *Repository) GetByEmail(email string) (*domainExchanger.Exchanger, error
 func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainExchanger.Exchanger, error) {
 	var userObj Exchanger
 	userObj.ID = id
+	r.Logger.Info("Updating user", zap.Any("dsd", userMap))
 
 	// Map JSON field names to DB column names
 	updateData := make(map[string]interface{})
@@ -135,7 +138,7 @@ func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainExch
 	}
 
 	err := r.DB.Model(&userObj).
-		Select("user_name", "email", "first_name", "last_name", "status", "role").
+		Select("name", "is_active", "api_key", "url").
 		Updates(updateData).Error
 	if err != nil {
 		r.Logger.Error("Error updating user", zap.Error(err), zap.Int("id", id))
@@ -179,6 +182,7 @@ func (u *Exchanger) toDomainMapper() *domainExchanger.Exchanger {
 	return &domainExchanger.Exchanger{
 		ID:        u.ID,
 		Name:      u.Name,
+		Url:       u.Url,
 		IsActive:  u.IsActive,
 		ApiKey:    u.ApiKey,
 		CreatedAt: u.CreatedAt,
@@ -190,6 +194,7 @@ func fromDomainMapper(u *domainExchanger.Exchanger) *Exchanger {
 	return &Exchanger{
 		ID:        u.ID,
 		Name:      u.Name,
+		Url:       u.Url,
 		IsActive:  u.IsActive,
 		ApiKey:    u.ApiKey,
 		CreatedAt: u.CreatedAt,
