@@ -19,6 +19,10 @@ type mockUserService struct {
 	updateFn     func(id int, m map[string]interface{}) (*userDomain.User, error)
 }
 
+func (m *mockUserService) GetByUserName(userName string) (*userDomain.User, error) {
+	return nil, nil
+}
+
 func (m *mockUserService) GetAll() (*[]userDomain.User, error) {
 	return m.getAllFn()
 }
