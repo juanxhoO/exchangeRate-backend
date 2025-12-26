@@ -11,21 +11,22 @@ import (
 )
 
 type mockUserService struct {
-	getAllFn     func() (*[]userDomain.User, error)
-	getByIDFn    func(id int) (*userDomain.User, error)
-	getByEmailFn func(email string) (*userDomain.User, error)
-	createFn     func(u *userDomain.User) (*userDomain.User, error)
-	deleteFn     func(id int) error
-	updateFn     func(id int, m map[string]interface{}) (*userDomain.User, error)
-}
-
-func (m *mockUserService) GetByUserName(userName string) (*userDomain.User, error) {
-	return nil, nil
+	getAllFn        func() (*[]userDomain.User, error)
+	getByIDFn       func(id int) (*userDomain.User, error)
+	getByEmailFn    func(email string) (*userDomain.User, error)
+	createFn        func(u *userDomain.User) (*userDomain.User, error)
+	deleteFn        func(id int) error
+	updateFn        func(id int, m map[string]interface{}) (*userDomain.User, error)
+	getByUsernameFn func(username string) (*userDomain.User, error)
 }
 
 func (m *mockUserService) GetAll() (*[]userDomain.User, error) {
 	return m.getAllFn()
 }
+func (m *mockUserService) GetByUserName(userName string) (*userDomain.User, error) {
+	return nil, nil
+}
+
 func (m *mockUserService) GetByID(id int) (*userDomain.User, error) {
 	return m.getByIDFn(id)
 }
@@ -132,7 +133,7 @@ func TestUserUseCase(t *testing.T) {
 			newU.ID = 555
 			return newU, nil
 		}
-		created, err := useCase.Create(&userDomain.User{Email: "test@mail.com", Password: "abc"})
+		created, err := useCase.Create(&userDomain.User{Email: "test222@mail.com", Password: "abc"})
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}

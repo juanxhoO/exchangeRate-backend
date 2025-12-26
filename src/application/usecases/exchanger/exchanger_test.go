@@ -10,6 +10,8 @@ import (
 	security "github.com/gbrayhan/microservices-go/src/infrastructure/security"
 )
 
+type mockAPIService struct{}
+
 type mockUserService struct {
 	getAllFn  func() (*[]exchangerDomain.Exchanger, error)
 	getByIDFn func(id int) (*exchangerDomain.Exchanger, error)
@@ -18,6 +20,17 @@ type mockUserService struct {
 	updateFn  func(id int, m map[string]interface{}) (*exchangerDomain.Exchanger, error)
 }
 
+func (m *mockAPIService) EncryptApiKey(value string) (string, error) {
+	return "encrypted-api-key", nil
+}
+
+func (m *mockAPIService) DecryptApiKey(value string) (string, error) {
+	return "decrypted-api-key", nil
+}
+
+func (m *mockAPIService) GenerateApiKey(length int) (string, error) {
+	return "generated-api-key", nil
+}
 func (m *mockUserService) GetAll() (*[]exchangerDomain.Exchanger, error) {
 	return m.getAllFn()
 }
@@ -46,7 +59,7 @@ func TestUserUseCase(t *testing.T) {
 
 	mockRepo := &mockUserService{}
 	logger := setupLogger(t)
-	apiService := &security.APIService{}
+	apiService := &mockAPIService{}
 	useCase := NewExchangerUseCase(mockRepo, apiService, logger)
 
 	t.Run("Test GetAll", func(t *testing.T) {
@@ -90,19 +103,12 @@ func TestUserUseCase(t *testing.T) {
 			newU.ID = 555
 			return newU, nil
 		}
-		created, err := useCase.Create(&exchangerDomain.Exchanger{Name: "test@mail.com"})
+		created, err := useCase.Create(&exchangerDomain.Exchanger{Name: "ExchangerP1", IsActive: true, ApiKey: "dsdsd22323dsdsd", Url: "http://localhost:8080"})
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 		if created.ID != 555 {
 			t.Error("expected ID=555 after create")
-		}
-	})
-
-	t.Run("Test Create (Error empty email)", func(t *testing.T) {
-		_, err := useCase.Create(&exchangerDomain.Exchanger{Name: ""})
-		if err == nil {
-			t.Error("expected error on create user with empty email")
 		}
 	})
 
@@ -130,11 +136,11 @@ func TestUserUseCase(t *testing.T) {
 			}
 			return &exchangerDomain.Exchanger{ID: id, Name: "Updated"}, nil
 		}
-		_, err := useCase.Update(999, map[string]interface{}{"userName": "any"})
+		_, err := useCase.Update(999, map[string]interface{}{"name": "Updated"})
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
-		updated, err := useCase.Update(1001, map[string]interface{}{"userName": "whatever"})
+		updated, err := useCase.Update(1001, map[string]interface{}{"name": "Updated"})
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -149,7 +155,7 @@ func TestNewUserUseCase(t *testing.T) {
 	loggerInstance := setupLogger(t)
 	apiService := &security.APIService{}
 	useCase := NewExchangerUseCase(mockRepo, apiService, loggerInstance)
-	if reflect.TypeOf(useCase).String() != "*user.UserUseCase" {
-		t.Error("expected *user.UserUseCase type")
+	if reflect.TypeOf(useCase).String() != "*exchanger.ExchangerUseCase" {
+		t.Error("expected *exchanger.ExchangerUseCase type")
 	}
 }

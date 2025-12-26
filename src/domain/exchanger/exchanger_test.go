@@ -11,6 +11,7 @@ func TestUser_Fields(t *testing.T) {
 		Name:      "testuser",
 		IsActive:  true,
 		ApiKey:    "password",
+		Url:       "http://localhost:8080",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -19,7 +20,7 @@ func TestUser_Fields(t *testing.T) {
 		t.Errorf("Expected ID to be 1, got %d", user.ID)
 	}
 
-	if user.Name != "User" {
+	if user.Name != "testuser" {
 		t.Errorf("Expected LastName to be 'User', got %s", user.Name)
 	}
 

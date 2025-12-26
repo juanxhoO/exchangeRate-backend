@@ -9,6 +9,7 @@ func TestUser_Fields(t *testing.T) {
 	user := User{
 		ID:           1,
 		UserName:     "testuser",
+		Role:         "ADMINISTRATOR",
 		Email:        "test@example.com",
 		FirstName:    "Test",
 		LastName:     "User",

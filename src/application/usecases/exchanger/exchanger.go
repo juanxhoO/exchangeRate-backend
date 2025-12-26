@@ -1,8 +1,6 @@
 package exchanger
 
 import (
-	"os"
-
 	exchangerDomain "github.com/gbrayhan/microservices-go/src/domain/exchanger"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/exchanger"
@@ -43,11 +41,10 @@ func (s *ExchangerUseCase) GetByID(id int) (*exchangerDomain.Exchanger, error) {
 }
 
 func (s *ExchangerUseCase) Create(newExchanger *exchangerDomain.Exchanger) (*exchangerDomain.Exchanger, error) {
-	s.Logger.Info("Creating new user", zap.String("email", newExchanger.Name))
+	s.Logger.Info("Creating new user", zap.String("Name", newExchanger.Name))
 	//Encrypt  the apiKey
-	key := os.Getenv("SECRET_API_KEY_GENERATOR")
 	var err error
-	newExchanger.ApiKey, err = s.apiService.EncryptApiKey(newExchanger.ApiKey, []byte(key))
+	newExchanger.ApiKey, err = s.apiService.EncryptApiKey(newExchanger.ApiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +59,12 @@ func (s *ExchangerUseCase) Delete(id int) error {
 func (s *ExchangerUseCase) Update(id int, userMap map[string]interface{}) (*exchangerDomain.Exchanger, error) {
 	s.Logger.Info("Updating user", zap.Int("id", id))
 	//Encrypt  the apiKey
-	key := os.Getenv("SECRET_API_KEY_GENERATOR")
 	var err error
-	userMap["apiKey"], err = s.apiService.EncryptApiKey(userMap["apiKey"].(string), []byte(key))
-	if err != nil {
-		return nil, err
+	if apiKey, ok := userMap["apiKey"]; ok {
+		userMap["apiKey"], err = s.apiService.EncryptApiKey(apiKey.(string))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return s.exchangerRepository.Update(id, userMap)
 }

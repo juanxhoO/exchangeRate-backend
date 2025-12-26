@@ -7,8 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"os"
-
 	currencyDomain "github.com/gbrayhan/microservices-go/src/domain/currency"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/currency"
@@ -117,7 +115,7 @@ func (s *CurrencyUseCase) UpdateExchanges() (any, error) {
 
 	for _, exchanger := range *exchangers {
 		//first unhash the api key
-		decodedApiKey, err := s.apiService.DecryptApiKey(exchanger.ApiKey, []byte(os.Getenv("SECRET_API_KEY_GENERATOR")))
+		decodedApiKey, err := s.apiService.DecryptApiKey(exchanger.ApiKey)
 		if err != nil {
 			return nil, err
 		}

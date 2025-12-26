@@ -5,12 +5,13 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"os"
 )
 
 type IAPIService interface {
 	GenerateApiKey(length int) (string, error)
-	EncryptApiKey(apiKey string, secretKey []byte) (string, error)
-	DecryptApiKey(cipherKey string, secretKey []byte) (string, error)
+	EncryptApiKey(apiKey string) (string, error)
+	DecryptApiKey(cipherKey string) (string, error)
 }
 
 type APIService struct {
@@ -32,9 +33,9 @@ func (s *APIService) GenerateApiKey(length int) (string, error) {
 	return apiKey, nil
 }
 
-func (s *APIService) EncryptApiKey(apiKey string, secretKey []byte) (string, error) {
+func (s *APIService) EncryptApiKey(apiKey string) (string, error) {
 
-	block, err := aes.NewCipher(secretKey)
+	block, err := aes.NewCipher([]byte(os.Getenv("SECRET_API_KEY_GENERATOR")))
 	if err != nil {
 		return "", err
 	}
@@ -53,14 +54,14 @@ func (s *APIService) EncryptApiKey(apiKey string, secretKey []byte) (string, err
 	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
 
-func (s *APIService) DecryptApiKey(cipherKey string, secretKey []byte) (string, error) {
+func (s *APIService) DecryptApiKey(cipherKey string) (string, error) {
 
 	cipherText, err := base64.URLEncoding.DecodeString(cipherKey)
 	if err != nil {
 		return "", err
 	}
 
-	block, err := aes.NewCipher(secretKey)
+	block, err := aes.NewCipher([]byte(os.Getenv("SECRET_API_KEY_GENERATOR")))
 	if err != nil {
 		return "", err
 	}

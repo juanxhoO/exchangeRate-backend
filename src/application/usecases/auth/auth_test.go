@@ -24,6 +24,10 @@ type mockUserService struct {
 func (m *mockUserService) GetAll() (*[]domainUser.User, error) {
 	return nil, nil
 }
+
+func (m *mockUserService) GetByUserName(userName string) (*domainUser.User, error) {
+	return nil, nil
+}
 func (m *mockUserService) GetByID(id int) (*domainUser.User, error) {
 	m.callGetByIDCalled = true
 	return m.getByIDFn(id)
