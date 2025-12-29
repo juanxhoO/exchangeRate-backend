@@ -61,8 +61,8 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 
 	// Initialize repositories with logger
 	userRepo := user.NewUserRepository(db, loggerInstance)
-	currencyRepo := currency.NewUserRepository(db, loggerInstance)
-	exchangerRepo := exchanger.NewUserRepository(db, loggerInstance)
+	currencyRepo := currency.NewCurrencyRepository(db, loggerInstance)
+	exchangerRepo := exchanger.NewExchangerRepository(db, loggerInstance)
 
 	// Initialize use cases with logger
 	authUC := authUseCase.NewAuthUseCase(userRepo, jwtService, loggerInstance)

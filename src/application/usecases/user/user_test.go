@@ -120,6 +120,11 @@ func TestUserUseCase(t *testing.T) {
 	})
 
 	t.Run("Test Create (OK)", func(t *testing.T) {
+
+		mockRepo.getByEmailFn = func(email string) (*userDomain.User, error) {
+			return nil, nil // <-- IMPORTANT
+		}
+
 		mockRepo.createFn = func(newU *userDomain.User) (*userDomain.User, error) {
 			if !newU.Status {
 				t.Error("expected user.Status to be true")
@@ -133,7 +138,12 @@ func TestUserUseCase(t *testing.T) {
 			newU.ID = 555
 			return newU, nil
 		}
-		created, err := useCase.Create(&userDomain.User{Email: "test222@mail.com", Password: "abc"})
+
+		created, err := useCase.Create(&userDomain.User{
+			Email:    "test222@mail.com",
+			Password: "abc",
+		})
+
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}

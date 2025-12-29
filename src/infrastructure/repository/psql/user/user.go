@@ -122,7 +122,7 @@ func (r *Repository) GetByEmail(email string) (*domainUser.User, error) {
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.Logger.Warn("User not found", zap.String("email", email))
-			return nil, nil
+			return nil, domainErrors.NewAppErrorWithType(domainErrors.NotFound)
 		}
 		r.Logger.Error("Error getting user by email", zap.Error(err), zap.String("email", email))
 		return nil, domainErrors.NewAppErrorWithType(domainErrors.UnknownError)

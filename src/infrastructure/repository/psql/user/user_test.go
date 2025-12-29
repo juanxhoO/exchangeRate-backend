@@ -184,8 +184,7 @@ func TestRepository_GetByEmail(t *testing.T) {
 		WithArgs(emailNotFound, 1).WillReturnRows(sqlmock.NewRows([]string{"id", "user_name", "email", "first_name", "last_name", "status", "hash_password"}))
 	user, err = repo.GetByEmail(emailNotFound)
 	assert.Error(t, err)
-	assert.NotNil(t, user)
-	assert.Equal(t, 0, user.ID) // Should be zero value
+	assert.Nil(t, user)
 }
 
 // The following tests need refactoring to use sqlmock or should be moved to integration:

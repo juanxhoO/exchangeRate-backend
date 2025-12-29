@@ -49,7 +49,7 @@ type Repository struct {
 	Logger *logger.Logger
 }
 
-func NewUserRepository(db *gorm.DB, loggerInstance *logger.Logger) ExchangerRepositoryInterface {
+func NewExchangerRepository(db *gorm.DB, loggerInstance *logger.Logger) ExchangerRepositoryInterface {
 	return &Repository{DB: db, Logger: loggerInstance}
 }
 

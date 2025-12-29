@@ -54,11 +54,10 @@ func (s *UserUseCase) Create(newUser *userDomain.User) (*userDomain.User, error)
 	if err != nil {
 		return nil, err
 	}
-
+	s.Logger.Info("Existing email", zap.Any("existingEmail", existingEmail != nil))
 	if existingEmail != nil {
 		return nil, domainErrors.NewResourceAlreadyExists("email")
 	}
-
 	//Check if username already exists
 
 	existingUsername, err := s.userRepository.GetByUserName(newUser.UserName)

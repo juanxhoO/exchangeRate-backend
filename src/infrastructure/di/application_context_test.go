@@ -38,6 +38,10 @@ func (m *MockUserRepository) GetByEmail(email string) (*domainUser.User, error) 
 	return args.Get(0).(*domainUser.User), args.Error(1)
 }
 
+func (m *MockUserRepository) GetByUserName(userName string) (*domainUser.User, error) {
+	args := m.Called(userName)
+	return args.Get(0).(*domainUser.User), args.Error(1)
+}
 func (m *MockUserRepository) Delete(id int) error {
 	args := m.Called(id)
 	return args.Error(0)

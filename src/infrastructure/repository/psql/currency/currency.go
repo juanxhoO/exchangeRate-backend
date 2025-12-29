@@ -38,9 +38,9 @@ var ColumnsUserMapping = map[string]string{
 // UserRepositoryInterface defines the interface for user repository operations
 type CurrencyRepositoryInterface interface {
 	GetAll() (*[]domainCurrency.Currency, error)
-	Create(userDomain *domainCurrency.Currency) (*domainCurrency.Currency, error)
+	Create(currencyDomain *domainCurrency.Currency) (*domainCurrency.Currency, error)
 	GetByID(id int) (*domainCurrency.Currency, error)
-	Update(id int, userMap map[string]interface{}) (*domainCurrency.Currency, error)
+	Update(id int, currencyMap map[string]interface{}) (*domainCurrency.Currency, error)
 	Delete(id int) error
 }
 
@@ -49,7 +49,7 @@ type Repository struct {
 	Logger *logger.Logger
 }
 
-func NewUserRepository(db *gorm.DB, loggerInstance *logger.Logger) CurrencyRepositoryInterface {
+func NewCurrencyRepository(db *gorm.DB, loggerInstance *logger.Logger) CurrencyRepositoryInterface {
 	return &Repository{DB: db, Logger: loggerInstance}
 }
 
@@ -120,10 +120,10 @@ func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainCurr
 	}
 
 	err := r.DB.Model(&userObj).
-		Select("user_name", "email", "first_name", "last_name", "status", "role").
+		Select("currency_name", "code", "rate", "status").
 		Updates(updateData).Error
 	if err != nil {
-		r.Logger.Error("Error updating user", zap.Error(err), zap.Int("id", id))
+		r.Logger.Error("Error updating currency", zap.Error(err), zap.Int("id", id))
 		byteErr, _ := json.Marshal(err)
 		var newError domainErrors.GormErr
 		errUnmarshal := json.Unmarshal(byteErr, &newError)
@@ -138,10 +138,10 @@ func (r *Repository) Update(id int, userMap map[string]interface{}) (*domainCurr
 		}
 	}
 	if err := r.DB.Where("id = ?", id).First(&userObj).Error; err != nil {
-		r.Logger.Error("Error retrieving updated user", zap.Error(err), zap.Int("id", id))
+		r.Logger.Error("Error retrieving updated currency", zap.Error(err), zap.Int("id", id))
 		return &domainCurrency.Currency{}, err
 	}
-	r.Logger.Info("Successfully updated user", zap.Int("id", id))
+	r.Logger.Info("Successfully updated currency", zap.Int("id", id))
 	return userObj.toDomainMapper(), nil
 }
 
