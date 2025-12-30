@@ -13,7 +13,7 @@ import (
 
 type Currency struct {
 	ID        int       `gorm:"primaryKey"`
-	Name      string    `gorm:"column:currency_name;unique"`
+	Name      string    `gorm:"column:currency_name"`
 	Rate      float64   `gorm:"column:rate"`
 	Code      string    `gorm:"column:code;unique"`
 	Status    bool      `gorm:"column:status"`
@@ -69,7 +69,7 @@ func (r *Repository) Create(currencyDomain *domainCurrency.Currency) (*domainCur
 	txDb := r.DB.Create(userRepository)
 	err := txDb.Error
 	if err != nil {
-		r.Logger.Error("Error creating user", zap.Error(err), zap.String("email", currencyDomain.Code))
+		r.Logger.Error("Error creating user", zap.Error(err), zap.String("code", currencyDomain.Code))
 		byteErr, _ := json.Marshal(err)
 		var newError domainErrors.GormErr
 		errUnmarshal := json.Unmarshal(byteErr, &newError)
@@ -84,7 +84,7 @@ func (r *Repository) Create(currencyDomain *domainCurrency.Currency) (*domainCur
 			err = domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
 		}
 	}
-	r.Logger.Info("Successfully created user", zap.String("email", currencyDomain.Code), zap.Int("id", userRepository.ID))
+	r.Logger.Info("Successfully created user", zap.String("code", currencyDomain.Code), zap.Int("id", userRepository.ID))
 	return userRepository.toDomainMapper(), err
 }
 

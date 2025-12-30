@@ -124,17 +124,32 @@ func (s *CurrencyUseCase) UpdateExchanges() (any, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		normalizedRate := normalizeExchange(exchanger.Name, "USD", data)
 		allRates = append(allRates, normalizedRate...)
-		s.Logger.Info("Exchange rates fetched", zap.Any("rates", allRates))
 	}
+
+	aggregated := aggregateRates(allRates)
+
+	//Create Currencies
+	for _, rate := range aggregated {
+		s.Logger.Info("Creating currency", zap.String("currency", rate.Currency))
+
+		currency := currencyDomain.Currency{
+			Rate:   rate.Rate,
+			Status: true,
+			Code:   rate.Currency,
+			Name:   rate.Name,
+		}
+		s.currencyRepository.Create(&currency)
+	}
+
 	return nil, nil
 }
 
 type AggregatedRate struct {
 	Base     string
 	Currency string
+	Name     string
 	Rate     float64
 	Sources  int
 }
@@ -145,6 +160,7 @@ func aggregateRates(rates []NormalizedRate) map[string]AggregatedRate {
 		count    int
 		base     string
 		currency string
+		name     string
 	})
 
 	for _, r := range rates {
@@ -163,6 +179,7 @@ func aggregateRates(rates []NormalizedRate) map[string]AggregatedRate {
 	for key, v := range acc {
 		result[key] = AggregatedRate{
 			Base:     v.base,
+			Name:     v.name,
 			Currency: v.currency,
 			Rate:     v.sum / float64(v.count),
 			Sources:  v.count,
@@ -179,8 +196,6 @@ func (s *CurrencyUseCase) fetchExchangeData(
 	url string,
 	apiKey string,
 ) (map[string]float64, error) {
-
-	s.Logger.Info("Fetching exchange data", zap.String("url", url+"?apikey="+apiKey))
 	req, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
