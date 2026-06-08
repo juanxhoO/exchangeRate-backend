@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gbrayhan/microservices-go/src/infrastructure/di"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/rest/middlewares"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/rest/routes"
 	"github.com/gin-contrib/cors"
@@ -28,6 +30,9 @@ func loadServerConfig() ServerConfig {
 }
 
 func main() {
+	resetDB := flag.Bool("reset-db", false, "Reset the database schema and data")
+	flag.Parse()
+
 	// Initialize logger first based on environment
 	env := getEnvOrDefault("GO_ENV", "development")
 	var loggerInstance *logger.Logger
@@ -49,6 +54,23 @@ func main() {
 	}()
 
 	loggerInstance.Info("Starting microservices application")
+
+	if *resetDB {
+		loggerInstance.Info("Resetting database...")
+		
+		db, err := psql.InitPSQLDB(loggerInstance)
+		if err != nil {
+			loggerInstance.Fatal("Failed to connect to database", zap.Error(err))
+		}
+		
+		repo := psql.NewRepository(db, loggerInstance)
+		if err := repo.ResetDatabase(); err != nil {
+			loggerInstance.Fatal("Failed to reset database", zap.Error(err))
+		}
+		
+		loggerInstance.Info("Database fully reset successfully!")
+		os.Exit(0)
+	}
 
 	// Load server configuration
 	serverConfig := loadServerConfig()

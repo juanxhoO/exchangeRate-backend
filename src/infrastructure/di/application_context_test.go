@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gbrayhan/microservices-go/src/domain"
+	domainToken "github.com/gbrayhan/microservices-go/src/domain/token"
 	domainUser "github.com/gbrayhan/microservices-go/src/domain/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/security"
@@ -90,6 +91,30 @@ func (m *MockJWTService) GetClaimsAndVerifyToken(tokenString string, tokenType s
 	return args.Get(0).(jwt.MapClaims), args.Error(1)
 }
 
+type MockTokenRepository struct {
+	mock.Mock
+}
+
+func (m *MockTokenRepository) Create(token *domainToken.Token) error {
+	args := m.Called(token)
+	return args.Error(0)
+}
+func (m *MockTokenRepository) GetByTokenAndType(tokenStr string, tokenType domainToken.TokenType) (*domainToken.Token, error) {
+	args := m.Called(tokenStr, tokenType)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainToken.Token), args.Error(1)
+}
+func (m *MockTokenRepository) DeleteByToken(tokenStr string) error {
+	args := m.Called(tokenStr)
+	return args.Error(0)
+}
+func (m *MockTokenRepository) DeleteAllUserTokensByType(userID int, tokenType domainToken.TokenType) error {
+	args := m.Called(userID, tokenType)
+	return args.Error(0)
+}
+
 func setupLogger(t *testing.T) *logger.Logger {
 	loggerInstance, err := logger.NewLogger()
 	if err != nil {
@@ -103,7 +128,9 @@ func TestNewTestApplicationContext(t *testing.T) {
 	mockJWTService := &MockJWTService{}
 	logger := setupLogger(t)
 
-	appContext := NewTestApplicationContext(mockUserRepo, mockJWTService, logger)
+	mockTokenRepo := &MockTokenRepository{}
+
+	appContext := NewTestApplicationContext(mockUserRepo, mockTokenRepo, mockJWTService, logger)
 
 	assert.NotNil(t, appContext)
 	assert.Equal(t, mockUserRepo, appContext.UserRepository)
@@ -137,7 +164,9 @@ func TestApplicationContextStructure(t *testing.T) {
 	mockJWTService := &MockJWTService{}
 	logger := setupLogger(t)
 
-	appContext := NewTestApplicationContext(mockUserRepo, mockJWTService, logger)
+	mockTokenRepo := &MockTokenRepository{}
+
+	appContext := NewTestApplicationContext(mockUserRepo, mockTokenRepo, mockJWTService, logger)
 
 	// Test that all fields are properly set
 	assert.NotNil(t, appContext.AuthController)

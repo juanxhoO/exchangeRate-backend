@@ -10,6 +10,7 @@ import (
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/currency"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/exchanger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/token"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -114,6 +115,23 @@ func (c DatabaseConfig) GetDSN() string {
 		" TimeZone=America/Mexico_City"
 }
 
+func (r *PSQLRepository) ResetDatabase() error {
+	// Import models
+	userModel := &user.User{}
+	currencyModel := &currency.Currency{}
+	exchangerModel := &exchanger.Exchanger{}
+	tokenModel := &token.Token{}
+
+	// Drop the tables if they exist
+	err := r.DB.Migrator().DropTable(userModel, currencyModel, exchangerModel, tokenModel)
+	if err != nil {
+		return err
+	}
+
+	// Recreate them empty
+	return r.MigrateEntitiesGORM()
+}
+
 func (r *PSQLRepository) InitDatabase() error {
 	cfg, err := loadDatabaseConfig()
 	if err != nil {
@@ -154,9 +172,10 @@ func (r *PSQLRepository) MigrateEntitiesGORM() error {
 	userModel := &user.User{}
 	currencyModel := &currency.Currency{}
 	exchangerModel := &exchanger.Exchanger{}
+	tokenModel := &token.Token{}
 
 	// Auto migrate the models to create/update tables
-	err := r.DB.AutoMigrate(userModel, currencyModel, exchangerModel)
+	err := r.DB.AutoMigrate(userModel, currencyModel, exchangerModel, tokenModel)
 	if err != nil {
 		r.Logger.Error("Error migrating database entities", zap.Error(err))
 		return err

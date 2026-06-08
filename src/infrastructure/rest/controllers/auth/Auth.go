@@ -15,6 +15,7 @@ import (
 type IAuthController interface {
 	Login(ctx *gin.Context)
 	Register(ctx *gin.Context)
+	ForgotPassword(ctx *gin.Context)
 	GetAccessTokenByRefreshToken(ctx *gin.Context)
 }
 
@@ -67,6 +68,27 @@ func (c *AuthController) Login(ctx *gin.Context) {
 
 	c.Logger.Info("Login successful", zap.String("email", request.Email), zap.Int("userID", domainUser.ID))
 	ctx.JSON(http.StatusOK, response)
+}
+
+func (c *AuthController) ForgotPassword(ctx *gin.Context) {
+	c.Logger.Info("User forgot password request")
+	var request ForgotPasswordRequest
+	if err := controllers.BindJSON(ctx, &request); err != nil {
+		c.Logger.Error("Error binding JSON for forgot password", zap.Error(err))
+		appError := domainErrors.NewAppError(err, domainErrors.ValidationError)
+		_ = ctx.Error(appError)
+		return
+	}
+
+	_, err := c.authUseCase.ForgotPassword(request.Email)
+	if err != nil {
+		c.Logger.Error("Forgot password failed", zap.Error(err), zap.String("email", request.Email))
+		_ = ctx.Error(err)
+		return
+	}
+
+	c.Logger.Info("Forgot password successful", zap.String("email", request.Email))
+	ctx.JSON(http.StatusOK, "success")
 }
 
 func (c *AuthController) Register(ctx *gin.Context) {

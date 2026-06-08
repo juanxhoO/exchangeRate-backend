@@ -17,6 +17,7 @@ import (
 // MockAuthUseCase implements IAuthUseCase for testing
 type MockAuthUseCase struct {
 	loginFunc                func(string, string) (*userDomain.User, *useCaseAuth.AuthTokens, error)
+	forgotPasswordFunc       func(string) (*userDomain.User, error)
 	accessTokenByRefreshFunc func(string) (*userDomain.User, *useCaseAuth.AuthTokens, error)
 	registerFunc             func(*userDomain.User) (*userDomain.User, error)
 }
@@ -26,6 +27,13 @@ func (m *MockAuthUseCase) Login(email, password string) (*userDomain.User, *useC
 		return m.loginFunc(email, password)
 	}
 	return nil, nil, nil
+}
+
+func (m *MockAuthUseCase) ForgotPassword(email string) (*userDomain.User, error) {
+	if m.forgotPasswordFunc != nil {
+		return m.forgotPasswordFunc(email)
+	}
+	return nil, nil
 }
 
 func (m *MockAuthUseCase) Register(data *userDomain.User) (*userDomain.User, error) {

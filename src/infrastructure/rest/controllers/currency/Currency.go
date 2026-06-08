@@ -6,9 +6,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gbrayhan/microservices-go/src/domain"
 	domainCurrency "github.com/gbrayhan/microservices-go/src/domain/currency"
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/currency"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -36,6 +39,7 @@ type ICurrencyController interface {
 	GetCurrenciesByID(ctx *gin.Context)
 	DeleteCurrency(ctx *gin.Context)
 	UpdateExchanges(ctx *gin.Context)
+	SearchPaginated(ctx *gin.Context)
 }
 
 type CurrencyController struct {
@@ -110,6 +114,105 @@ func (c *CurrencyController) DeleteCurrency(ctx *gin.Context) {
 	}
 	c.Logger.Info("User deleted successfully", zap.Int("id", userID))
 	ctx.JSON(http.StatusOK, gin.H{"message": "resource deleted successfully"})
+}
+
+func (c *CurrencyController) SearchPaginated(ctx *gin.Context) {
+	c.Logger.Info("Searching currencies with pagination")
+
+	// Parse query parameters
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "10"))
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	// Build filters
+	filters := domain.DataFilters{
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	// Parse like filters
+	likeFilters := make(map[string][]string)
+
+	for field := range currency.ColumnsUserMapping {
+		if values := ctx.QueryArray(field + "_like"); len(values) > 0 {
+			c.Logger.Info("Using currency.ColumnsUserMapping", zap.Any("mapping", likeFilters))
+
+			likeFilters[field] = values
+		}
+	}
+	filters.LikeFilters = likeFilters
+
+	// Parse exact matches
+	matches := make(map[string][]string)
+	for field := range user.ColumnsUserMapping {
+		if values := ctx.QueryArray(field + "_match"); len(values) > 0 {
+			matches[field] = values
+		}
+	}
+	filters.Matches = matches
+
+	// Parse date range filters
+	var dateRanges []domain.DateRangeFilter
+	for field := range user.ColumnsUserMapping {
+		startStr := ctx.Query(field + "_start")
+		endStr := ctx.Query(field + "_end")
+
+		if startStr != "" || endStr != "" {
+			dateRange := domain.DateRangeFilter{Field: field}
+
+			if startStr != "" {
+				if startTime, err := time.Parse(time.RFC3339, startStr); err == nil {
+					dateRange.Start = &startTime
+				}
+			}
+
+			if endStr != "" {
+				if endTime, err := time.Parse(time.RFC3339, endStr); err == nil {
+					dateRange.End = &endTime
+				}
+			}
+
+			dateRanges = append(dateRanges, dateRange)
+		}
+	}
+	filters.DateRangeFilters = dateRanges
+
+	// Parse sorting
+	sortBy := ctx.QueryArray("sortBy")
+	if len(sortBy) > 0 {
+		filters.SortBy = sortBy
+	}
+
+	sortDirection := domain.SortDirection(ctx.DefaultQuery("sortDirection", "asc"))
+	if sortDirection.IsValid() {
+		filters.SortDirection = sortDirection
+	}
+
+	result, err := c.currencyService.SearchPaginated(filters)
+	if err != nil {
+		c.Logger.Error("Error searching currencies", zap.Error(err))
+		_ = ctx.Error(err)
+		return
+	}
+
+	response := gin.H{
+		"data":       arrayDomainToResponseMapper(result.Data),
+		"total":      result.Total,
+		"page":       result.Page,
+		"pageSize":   result.PageSize,
+		"totalPages": result.TotalPages,
+		"filters":    filters,
+	}
+
+	c.Logger.Info("Successfully searched currencies",
+		zap.Int64("total", result.Total),
+		zap.Int("page", result.Page))
+	ctx.JSON(http.StatusOK, response)
 }
 
 // Mappers

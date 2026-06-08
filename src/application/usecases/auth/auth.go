@@ -5,8 +5,10 @@ import (
 	"time"
 
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
+	domainToken "github.com/gbrayhan/microservices-go/src/domain/token"
 	domainUser "github.com/gbrayhan/microservices-go/src/domain/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/token"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/security"
 	"go.uber.org/zap"
@@ -16,20 +18,23 @@ import (
 type IAuthUseCase interface {
 	Register(newUser *domainUser.User) (*domainUser.User, error)
 	Login(email, password string) (*domainUser.User, *AuthTokens, error)
+	ForgotPassword(email string) (*domainUser.User, error)
 	AccessTokenByRefreshToken(refreshToken string) (*domainUser.User, *AuthTokens, error)
 }
 
 type AuthUseCase struct {
-	UserRepository user.UserRepositoryInterface
-	JWTService     security.IJWTService
-	Logger         *logger.Logger
+	UserRepository  user.UserRepositoryInterface
+	TokenRepository token.TokenRepositoryInterface
+	JWTService      security.IJWTService
+	Logger          *logger.Logger
 }
 
-func NewAuthUseCase(userRepository user.UserRepositoryInterface, jwtService security.IJWTService, loggerInstance *logger.Logger) IAuthUseCase {
+func NewAuthUseCase(userRepository user.UserRepositoryInterface, tokenRepository token.TokenRepositoryInterface, jwtService security.IJWTService, loggerInstance *logger.Logger) IAuthUseCase {
 	return &AuthUseCase{
-		UserRepository: userRepository,
-		JWTService:     jwtService,
-		Logger:         loggerInstance,
+		UserRepository:  userRepository,
+		TokenRepository: tokenRepository,
+		JWTService:      jwtService,
+		Logger:          loggerInstance,
 	}
 }
 
@@ -38,6 +43,36 @@ type AuthTokens struct {
 	RefreshToken              string
 	ExpirationAccessDateTime  time.Time
 	ExpirationRefreshDateTime time.Time
+}
+
+func (s *AuthUseCase) ForgotPassword(email string) (*domainUser.User, error) {
+	s.Logger.Info("Forgot password", zap.String("email", email))
+	user, err := s.UserRepository.GetByEmail(email)
+	if err != nil {
+		s.Logger.Error("Error getting user ", zap.Error(err), zap.String("email", email))
+		return nil, err
+	}
+	resetTokenClaims, err := s.JWTService.GenerateJWTToken(user.ID, "reset")
+	if err != nil {
+		s.Logger.Error("Error generating reset token", zap.Error(err), zap.Int("userID", user.ID))
+		return nil, err
+	}
+
+	_ = s.TokenRepository.DeleteAllUserTokensByType(user.ID, domainToken.Reset)
+
+	err = s.TokenRepository.Create(&domainToken.Token{
+		UserID:    user.ID,
+		Token:     resetTokenClaims.Token,
+		Type:      domainToken.Reset,
+		ExpiresAt: resetTokenClaims.ExpirationTime,
+	})
+
+	s.Logger.Info("Reset token saved", zap.String("token", resetTokenClaims.Token))
+	if err != nil {
+		s.Logger.Error("Error saving reset token", zap.Error(err))
+		return nil, err
+	}
+	return user, nil
 }
 
 func (s *AuthUseCase) Login(email, password string) (*domainUser.User, *AuthTokens, error) {
@@ -91,11 +126,7 @@ func (s *AuthUseCase) Register(newUser *domainUser.User) (*domainUser.User, erro
 	if existingUsername != nil {
 		return nil, domainErrors.NewResourceAlreadyExists("username")
 	}
-
 	existingEmail, err := s.UserRepository.GetByEmail(newUser.Email)
-	if err != nil {
-		return nil, err
-	}
 	if existingEmail != nil {
 		return nil, domainErrors.NewResourceAlreadyExists("email")
 	}
@@ -114,6 +145,11 @@ func (s *AuthUseCase) Register(newUser *domainUser.User) (*domainUser.User, erro
 		return nil, err
 	}
 	return user, nil
+}
+
+func (s *AuthUseCase) SendResetPasswordEmail(email string) error {
+	s.Logger.Info("Sending reset password email", zap.String("email", email))
+	return nil
 }
 
 func (s *AuthUseCase) AccessTokenByRefreshToken(refreshToken string) (*domainUser.User, *AuthTokens, error) {

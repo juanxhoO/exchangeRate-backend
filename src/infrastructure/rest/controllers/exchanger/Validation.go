@@ -18,9 +18,9 @@ func updateValidation(request map[string]any) error {
 	}
 
 	validationMap := map[string]string{
-		"name":     "omitempty,gt=3,lt=100",
-		"apiKey":   "omitempty,gt=10,lt=200",
-		"url":      "omitempty,gt=1,lt=100",
+		"name":     "omitempty,gt=3,lt=255",
+		"apiKey":   "omitempty,gt=10,lt=255",
+		"url":      "omitempty,gt=1,lt=255",
 		"isActive": "omitempty,gt=1,lt=100",
 	}
 

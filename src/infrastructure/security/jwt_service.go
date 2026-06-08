@@ -14,6 +14,7 @@ import (
 const (
 	Access  = "access"
 	Refresh = "refresh"
+	Reset   = "reset"
 )
 
 type AppToken struct {
@@ -34,6 +35,8 @@ type JWTConfig struct {
 	RefreshSecret string
 	AccessTime    int64
 	RefreshTime   int64
+	ResetSecret   string
+	ResetTime     int64
 }
 
 // IJWTService defines the interface for JWT operations
@@ -69,6 +72,8 @@ func loadJWTConfig() JWTConfig {
 		RefreshSecret: getEnvOrDefault("JWT_REFRESH_SECRET_KEY", "default_refresh_secret"),
 		AccessTime:    getEnvAsInt64OrDefault("JWT_ACCESS_TIME_MINUTE", 60),
 		RefreshTime:   getEnvAsInt64OrDefault("JWT_REFRESH_TIME_HOUR", 24),
+		ResetSecret:   getEnvOrDefault("JWT_RESET_SECRET_KEY", "default_reset_secret"),
+		ResetTime:     getEnvAsInt64OrDefault("JWT_RESET_TIME_MINUTE", 15),
 	}
 }
 
@@ -84,6 +89,10 @@ func (s *JWTService) GenerateJWTToken(userID int, tokenType string) (*AppToken, 
 	case Refresh:
 		secretKey = s.config.RefreshSecret
 		duration = time.Duration(s.config.RefreshTime) * time.Hour
+	case Reset:
+		secretKey = s.config.ResetSecret
+		duration = time.Duration(s.config.ResetTime) * time.Hour
+
 	default:
 		return nil, errors.New("invalid token type")
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/gbrayhan/microservices-go/src/domain"
 	domainCurrency "github.com/gbrayhan/microservices-go/src/domain/currency"
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
@@ -42,6 +43,7 @@ type CurrencyRepositoryInterface interface {
 	GetByID(id int) (*domainCurrency.Currency, error)
 	Update(id int, currencyMap map[string]interface{}) (*domainCurrency.Currency, error)
 	Delete(id int) error
+	SearchPaginated(filters domain.DataFilters) (*domainCurrency.SearchResultCurrency, error)
 }
 
 type Repository struct {
@@ -54,13 +56,13 @@ func NewCurrencyRepository(db *gorm.DB, loggerInstance *logger.Logger) CurrencyR
 }
 
 func (r *Repository) GetAll() (*[]domainCurrency.Currency, error) {
-	var users []Currency
-	if err := r.DB.Find(&users).Error; err != nil {
-		r.Logger.Error("Error getting all users", zap.Error(err))
+	var currencies []Currency
+	if err := r.DB.Find(&currencies).Error; err != nil {
+		r.Logger.Error("Error getting all currencies", zap.Error(err))
 		return nil, domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
 	}
-	r.Logger.Info("Successfully retrieved all users", zap.Int("count", len(users)))
-	return arrayToDomainMapper(&users), nil
+	r.Logger.Info("Successfully retrieved all currencies", zap.Int("count", len(currencies)))
+	return arrayToDomainMapper(&currencies), nil
 }
 
 func (r *Repository) Create(currencyDomain *domainCurrency.Currency) (*domainCurrency.Currency, error) {
@@ -157,6 +159,95 @@ func (r *Repository) Delete(id int) error {
 	}
 	r.Logger.Info("Successfully deleted user", zap.Int("id", id))
 	return nil
+}
+func (r *Repository) SearchPaginated(filters domain.DataFilters) (*domainCurrency.SearchResultCurrency, error) {
+	query := r.DB.Model(&Currency{})
+
+	r.Logger.Info("Building search query with filters", zap.Any("filters", filters))
+	// Apply like filters
+	for field, values := range filters.LikeFilters {
+		if len(values) > 0 {
+			for _, value := range values {
+				if value != "" {
+					column := ColumnsUserMapping[field]
+					if column != "" {
+						query = query.Where(column+" ILIKE ?", "%"+value+"%")
+					}
+				}
+			}
+		}
+	}
+
+	// Apply exact matches
+	for field, values := range filters.Matches {
+		if len(values) > 0 {
+			column := ColumnsUserMapping[field]
+			if column != "" {
+				query = query.Where(column+" IN ?", values)
+			}
+		}
+	}
+
+	// Apply date range filters
+	for _, dateFilter := range filters.DateRangeFilters {
+		column := ColumnsUserMapping[dateFilter.Field]
+		if column != "" {
+			if dateFilter.Start != nil {
+				query = query.Where(column+" >= ?", dateFilter.Start)
+			}
+			if dateFilter.End != nil {
+				query = query.Where(column+" <= ?", dateFilter.End)
+			}
+		}
+	}
+
+	// Apply sorting
+	if len(filters.SortBy) > 0 && filters.SortDirection.IsValid() {
+		for _, sortField := range filters.SortBy {
+			column := ColumnsUserMapping[sortField]
+			if column != "" {
+				query = query.Order(column + " " + string(filters.SortDirection))
+			}
+		}
+	}
+
+	// Count total records
+	var total int64
+	clonedQuery := query
+	clonedQuery.Count(&total)
+
+	// Apply pagination
+	if filters.Page < 1 {
+		filters.Page = 1
+	}
+	if filters.PageSize < 1 {
+		filters.PageSize = 10
+	}
+	offset := (filters.Page - 1) * filters.PageSize
+
+	var users []Currency
+	r.Logger.Info("Searching users", zap.Any("users", users))
+	if err := query.Offset(offset).Limit(filters.PageSize).Find(&users).Error; err != nil {
+		r.Logger.Error("Error searching users", zap.Error(err))
+		return nil, domainErrors.NewAppErrorWithType(domainErrors.UnknownError)
+	}
+
+	totalPages := int((total + int64(filters.PageSize) - 1) / int64(filters.PageSize))
+
+	result := &domainCurrency.SearchResultCurrency{
+		Data:       arrayToDomainMapper(&users),
+		Total:      total,
+		Page:       filters.Page,
+		PageSize:   filters.PageSize,
+		TotalPages: totalPages,
+	}
+
+	r.Logger.Info("Successfully searched users",
+		zap.Int64("total", total),
+		zap.Int("page", filters.Page),
+		zap.Int("pageSize", filters.PageSize))
+
+	return result, nil
 }
 
 // Mappers

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gbrayhan/microservices-go/src/domain"
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
+	domainToken "github.com/gbrayhan/microservices-go/src/domain/token"
 	domainUser "github.com/gbrayhan/microservices-go/src/domain/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/security"
@@ -63,6 +64,22 @@ func (m *mockJWTService) GenerateJWTToken(userID int, tokenType string) (*securi
 
 func (m *mockJWTService) GetClaimsAndVerifyToken(tokenString string, tokenType string) (jwt.MapClaims, error) {
 	return m.verifyTokenFn(tokenString, tokenType)
+}
+
+// Mock token repository
+type mockTokenRepository struct{}
+
+func (m *mockTokenRepository) Create(token *domainToken.Token) error {
+	return nil
+}
+func (m *mockTokenRepository) GetByTokenAndType(token string, tokenType domainToken.TokenType) (*domainToken.Token, error) {
+	return &domainToken.Token{Token: token, Type: tokenType}, nil
+}
+func (m *mockTokenRepository) DeleteByToken(token string) error {
+	return nil
+}
+func (m *mockTokenRepository) DeleteAllUserTokensByType(userID int, tokenType domainToken.TokenType) error {
+	return nil
 }
 
 func setupLogger(t *testing.T) *logger.Logger {
@@ -196,7 +213,7 @@ func TestAuthUseCase_Login(t *testing.T) {
 			}
 
 			logger := setupLogger(t)
-			uc := NewAuthUseCase(userRepoMock, jwtMock, logger)
+			uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger)
 
 			user, authTokens, err := uc.Login(tt.inputEmail, tt.inputPassword)
 			if (err != nil) != tt.wantErr {
@@ -337,7 +354,7 @@ func TestAuthUseCase_AccessTokenByRefreshToken(t *testing.T) {
 			}
 
 			logger := setupLogger(t)
-			uc := NewAuthUseCase(userRepoMock, jwtMock, logger)
+			uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger)
 
 			user, authTokens, err := uc.AccessTokenByRefreshToken(tt.inputRefreshToken)
 			if (err != nil) != tt.wantErr {

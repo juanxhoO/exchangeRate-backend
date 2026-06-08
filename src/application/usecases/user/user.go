@@ -84,6 +84,11 @@ func (s *UserUseCase) Delete(id int) error {
 	return s.userRepository.Delete(id)
 }
 
+func (s *UserUseCase) ForgotPassword(email string) (*userDomain.User, error) {
+	s.Logger.Info("Forgot password", zap.String("email", email))
+	return s.userRepository.GetByEmail(email)
+}
+
 func (s *UserUseCase) Update(id int, userMap map[string]interface{}) (*userDomain.User, error) {
 	s.Logger.Info("Updating user", zap.Int("id", id))
 	return s.userRepository.Update(id, userMap)

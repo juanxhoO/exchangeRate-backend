@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gbrayhan/microservices-go/src/domain"
 	currencyDomain "github.com/gbrayhan/microservices-go/src/domain/currency"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/currency"
@@ -20,6 +21,7 @@ type ICurrencyUseCase interface {
 	GetByID(id int) (*currencyDomain.Currency, error)
 	Delete(id int) error
 	UpdateExchanges() (any, error)
+	SearchPaginated(filters domain.DataFilters) (*currencyDomain.SearchResultCurrency, error)
 }
 
 type CurrencyUseCase struct {
@@ -78,6 +80,13 @@ func (s *CurrencyUseCase) Delete(id int) error {
 	return s.currencyRepository.Delete(id)
 }
 
+func (s *CurrencyUseCase) SearchPaginated(filters domain.DataFilters) (*currencyDomain.SearchResultCurrency, error) {
+	s.Logger.Info("Searching users with pagination",
+		zap.Int("page", filters.Page),
+		zap.Int("pageSize", filters.PageSize))
+	return s.currencyRepository.SearchPaginated(filters)
+}
+
 type NormalizedRate struct {
 	Provider string
 	Base     string
@@ -133,7 +142,6 @@ func (s *CurrencyUseCase) UpdateExchanges() (any, error) {
 	//Create Currencies
 	for _, rate := range aggregated {
 		s.Logger.Info("Creating currency", zap.String("currency", rate.Currency))
-
 		currency := currencyDomain.Currency{
 			Rate:   rate.Rate,
 			Status: true,
@@ -142,6 +150,7 @@ func (s *CurrencyUseCase) UpdateExchanges() (any, error) {
 		}
 		s.currencyRepository.Create(&currency)
 	}
+	s.Logger.Info("Exchanges updated successfully")
 
 	return nil, nil
 }

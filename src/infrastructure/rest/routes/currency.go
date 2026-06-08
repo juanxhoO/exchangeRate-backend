@@ -17,5 +17,6 @@ func CurrencyRoutes(router *gin.RouterGroup, controller currency.ICurrencyContro
 		u.GET("/", controller.GetAllCurrencies)
 		u.DELETE("/:id", controller.DeleteCurrency)
 		u.PUT("/rates", controller.UpdateExchanges)
+		u.GET("/search", controller.SearchPaginated)
 	}
 }

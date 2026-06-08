@@ -11,6 +11,7 @@ import (
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/currency"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/exchanger"
+	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/token"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/user"
 	authController "github.com/gbrayhan/microservices-go/src/infrastructure/rest/controllers/auth"
 	currencyController "github.com/gbrayhan/microservices-go/src/infrastructure/rest/controllers/currency"
@@ -30,6 +31,7 @@ type ApplicationContext struct {
 	ExchangerController exchangerController.IExchangerController
 	JWTService          security.IJWTService
 	UserRepository      user.UserRepositoryInterface
+	TokenRepository     token.TokenRepositoryInterface
 	AuthUseCase         authUseCase.IAuthUseCase
 	UserUseCase         userUseCase.IUserUseCase
 	CurrencyUseCase     currencyUseCase.ICurrencyUseCase
@@ -63,9 +65,10 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 	userRepo := user.NewUserRepository(db, loggerInstance)
 	currencyRepo := currency.NewCurrencyRepository(db, loggerInstance)
 	exchangerRepo := exchanger.NewExchangerRepository(db, loggerInstance)
+	tokenRepo := token.NewTokenRepository(db, loggerInstance)
 
 	// Initialize use cases with logger
-	authUC := authUseCase.NewAuthUseCase(userRepo, jwtService, loggerInstance)
+	authUC := authUseCase.NewAuthUseCase(userRepo, tokenRepo, jwtService, loggerInstance)
 	userUC := userUseCase.NewUserUseCase(userRepo, loggerInstance)
 	exchangerUC := exchangerUseCase.NewExchangerUseCase(exchangerRepo, apiService, loggerInstance)
 	currencyUC := currencyUseCase.NewCurrencyUseCase(currencyRepo, exchangerRepo, apiService, loggerInstance)
@@ -85,6 +88,7 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 		ExchangerController: exchangerController,
 		JWTService:          jwtService,
 		UserRepository:      userRepo,
+		TokenRepository:     tokenRepo,
 		AuthUseCase:         authUC,
 		UserUseCase:         userUC,
 		CurrencyUseCase:     currencyUC,
@@ -94,11 +98,12 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 // NewTestApplicationContext creates an application context for testing with mocked dependencies
 func NewTestApplicationContext(
 	mockUserRepo user.UserRepositoryInterface,
+	mockTokenRepo token.TokenRepositoryInterface,
 	mockJWTService security.IJWTService,
 	loggerInstance *logger.Logger,
 ) *ApplicationContext {
 	// Initialize use cases with mocked repositories and logger
-	authUC := authUseCase.NewAuthUseCase(mockUserRepo, mockJWTService, loggerInstance)
+	authUC := authUseCase.NewAuthUseCase(mockUserRepo, mockTokenRepo, mockJWTService, loggerInstance)
 	userUC := userUseCase.NewUserUseCase(mockUserRepo, loggerInstance)
 
 	// Initialize controllers with logger
@@ -106,12 +111,13 @@ func NewTestApplicationContext(
 	userController := userController.NewUserController(userUC, loggerInstance)
 
 	return &ApplicationContext{
-		Logger:         loggerInstance,
-		AuthController: authController,
-		UserController: userController,
-		JWTService:     mockJWTService,
-		UserRepository: mockUserRepo,
-		AuthUseCase:    authUC,
-		UserUseCase:    userUC,
+		Logger:          loggerInstance,
+		AuthController:  authController,
+		UserController:  userController,
+		JWTService:      mockJWTService,
+		UserRepository:  mockUserRepo,
+		TokenRepository: mockTokenRepo,
+		AuthUseCase:     authUC,
+		UserUseCase:     userUC,
 	}
 }

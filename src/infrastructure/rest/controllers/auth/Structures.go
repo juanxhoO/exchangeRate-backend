@@ -25,6 +25,10 @@ type UserData struct {
 	ID        int       `json:"id"`
 }
 
+type ForgotPasswordRequest struct {
+	Email string `json:"email" binding:"required"`
+}
+
 type RegisterRequest struct {
 	Email     string `json:"email" binding:"required"`
 	Password  string `json:"password" binding:"required"`
