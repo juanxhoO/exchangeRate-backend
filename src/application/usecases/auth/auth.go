@@ -52,6 +52,7 @@ func (s *AuthUseCase) ForgotPassword(email string) (*domainUser.User, error) {
 		s.Logger.Error("Error getting user ", zap.Error(err), zap.String("email", email))
 		return nil, err
 	}
+
 	resetTokenClaims, err := s.JWTService.GenerateJWTToken(user.ID, "reset")
 	if err != nil {
 		s.Logger.Error("Error generating reset token", zap.Error(err), zap.Int("userID", user.ID))
