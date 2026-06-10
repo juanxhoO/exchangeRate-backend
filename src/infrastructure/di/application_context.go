@@ -5,9 +5,11 @@ import (
 
 	authUseCase "github.com/gbrayhan/microservices-go/src/application/usecases/auth"
 	currencyUseCase "github.com/gbrayhan/microservices-go/src/application/usecases/currency"
+	emailUseCase "github.com/gbrayhan/microservices-go/src/application/usecases/email"
 	exchangerUseCase "github.com/gbrayhan/microservices-go/src/application/usecases/exchanger"
 	userUseCase "github.com/gbrayhan/microservices-go/src/application/usecases/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
+	infraMailer "github.com/gbrayhan/microservices-go/src/infrastructure/mailer"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/currency"
 	"github.com/gbrayhan/microservices-go/src/infrastructure/repository/psql/exchanger"
@@ -34,6 +36,7 @@ type ApplicationContext struct {
 	TokenRepository     token.TokenRepositoryInterface
 	AuthUseCase         authUseCase.IAuthUseCase
 	UserUseCase         userUseCase.IUserUseCase
+	EmailUseCase        emailUseCase.IEmailUseCase
 	CurrencyUseCase     currencyUseCase.ICurrencyUseCase
 }
 
@@ -57,6 +60,10 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 		return nil, err
 	}
 
+	// Initialize mailer with logger
+	goMailer := infraMailer.NewGoMailer()
+	emailUC := emailUseCase.NewEmailUseCase(goMailer, loggerInstance)
+
 	// Initialize JWT service (manages its own configuration)
 	jwtService := security.NewJWTService()
 	apiService := security.NewAPIService()
@@ -68,7 +75,7 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 	tokenRepo := token.NewTokenRepository(db, loggerInstance)
 
 	// Initialize use cases with logger
-	authUC := authUseCase.NewAuthUseCase(userRepo, tokenRepo, jwtService, loggerInstance)
+	authUC := authUseCase.NewAuthUseCase(userRepo, tokenRepo, jwtService, loggerInstance, goMailer)
 	userUC := userUseCase.NewUserUseCase(userRepo, loggerInstance)
 	exchangerUC := exchangerUseCase.NewExchangerUseCase(exchangerRepo, apiService, loggerInstance)
 	currencyUC := currencyUseCase.NewCurrencyUseCase(currencyRepo, exchangerRepo, apiService, loggerInstance)
@@ -90,6 +97,7 @@ func SetupDependencies(loggerInstance *logger.Logger) (*ApplicationContext, erro
 		UserRepository:      userRepo,
 		TokenRepository:     tokenRepo,
 		AuthUseCase:         authUC,
+		EmailUseCase:        emailUC,
 		UserUseCase:         userUC,
 		CurrencyUseCase:     currencyUC,
 	}, nil
@@ -103,7 +111,7 @@ func NewTestApplicationContext(
 	loggerInstance *logger.Logger,
 ) *ApplicationContext {
 	// Initialize use cases with mocked repositories and logger
-	authUC := authUseCase.NewAuthUseCase(mockUserRepo, mockTokenRepo, mockJWTService, loggerInstance)
+	authUC := authUseCase.NewAuthUseCase(mockUserRepo, mockTokenRepo, mockJWTService, loggerInstance, infraMailer.NewGoMailer())
 	userUC := userUseCase.NewUserUseCase(mockUserRepo, loggerInstance)
 
 	// Initialize controllers with logger

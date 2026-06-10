@@ -5,6 +5,7 @@ import (
 	"time"
 
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
+	domainMailer "github.com/gbrayhan/microservices-go/src/domain/ports"
 	domainToken "github.com/gbrayhan/microservices-go/src/domain/token"
 	domainUser "github.com/gbrayhan/microservices-go/src/domain/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
@@ -26,13 +27,15 @@ type AuthUseCase struct {
 	UserRepository  user.UserRepositoryInterface
 	TokenRepository token.TokenRepositoryInterface
 	JWTService      security.IJWTService
+	Mailer          domainMailer.IMailer
 	Logger          *logger.Logger
 }
 
-func NewAuthUseCase(userRepository user.UserRepositoryInterface, tokenRepository token.TokenRepositoryInterface, jwtService security.IJWTService, loggerInstance *logger.Logger) IAuthUseCase {
+func NewAuthUseCase(userRepository user.UserRepositoryInterface, tokenRepository token.TokenRepositoryInterface, jwtService security.IJWTService, loggerInstance *logger.Logger, mailService domainMailer.IMailer) IAuthUseCase {
 	return &AuthUseCase{
 		UserRepository:  userRepository,
 		TokenRepository: tokenRepository,
+		Mailer:          mailService,
 		JWTService:      jwtService,
 		Logger:          loggerInstance,
 	}
@@ -73,7 +76,30 @@ func (s *AuthUseCase) ForgotPassword(email string) (*domainUser.User, error) {
 		s.Logger.Error("Error saving reset token", zap.Error(err))
 		return nil, err
 	}
+
+	if err := s.sendResetPasswordEmail(user.Email, resetTokenClaims.Token); err != nil {
+		s.Logger.Error("Error sending reset password email", zap.Error(err), zap.String("email", email))
+		return nil, err
+	}
+
 	return user, nil
+}
+
+func (s *AuthUseCase) sendResetPasswordEmail(email string, resetToken string) error {
+
+	s.Logger.Info("Preparing reset password email", zap.String("email", email))
+	messageBody := "A password reset was requested for your account."
+	messageBody += "\n\nUse the token below to reset your password:\n\n"
+	messageBody += resetToken
+	messageBody += "\n\nIf you did not request this, please ignore this message."
+
+	s.Logger.Info("Sending reset password email", zap.String("email", email))
+	return s.Mailer.Send(domainMailer.EmailMessage{
+		To:      []string{email},
+		Subject: "Password Reset Request",
+		Body:    messageBody,
+		IsHTML:  false,
+	})
 }
 
 func (s *AuthUseCase) Login(email, password string) (*domainUser.User, *AuthTokens, error) {
@@ -146,11 +172,6 @@ func (s *AuthUseCase) Register(newUser *domainUser.User) (*domainUser.User, erro
 		return nil, err
 	}
 	return user, nil
-}
-
-func (s *AuthUseCase) SendResetPasswordEmail(email string) error {
-	s.Logger.Info("Sending reset password email", zap.String("email", email))
-	return nil
 }
 
 func (s *AuthUseCase) AccessTokenByRefreshToken(refreshToken string) (*domainUser.User, *AuthTokens, error) {

@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gbrayhan/microservices-go/src/domain"
+	domain "github.com/gbrayhan/microservices-go/src/domain"
 	domainErrors "github.com/gbrayhan/microservices-go/src/domain/errors"
+	domainPorts "github.com/gbrayhan/microservices-go/src/domain/ports"
 	domainToken "github.com/gbrayhan/microservices-go/src/domain/token"
 	domainUser "github.com/gbrayhan/microservices-go/src/domain/user"
 	logger "github.com/gbrayhan/microservices-go/src/infrastructure/logger"
@@ -80,6 +81,17 @@ func (m *mockTokenRepository) DeleteByToken(token string) error {
 }
 func (m *mockTokenRepository) DeleteAllUserTokensByType(userID int, tokenType domainToken.TokenType) error {
 	return nil
+}
+
+type mockMailService struct {
+	sendFn func(domainPorts.EmailMessage) error
+}
+
+func (m *mockMailService) Send(msg domainPorts.EmailMessage) error {
+	if m == nil || m.sendFn == nil {
+		return nil
+	}
+	return m.sendFn(msg)
 }
 
 func setupLogger(t *testing.T) *logger.Logger {
@@ -213,7 +225,7 @@ func TestAuthUseCase_Login(t *testing.T) {
 			}
 
 			logger := setupLogger(t)
-			uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger)
+			uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger, &mockMailService{})
 
 			user, authTokens, err := uc.Login(tt.inputEmail, tt.inputPassword)
 			if (err != nil) != tt.wantErr {
@@ -240,6 +252,43 @@ func TestAuthUseCase_Login(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAuthUseCase_ForgotPassword_SendsEmail(t *testing.T) {
+	sent := false
+	userRepoMock := &mockUserService{
+		getByEmailFn: func(email string) (*domainUser.User, error) {
+			hashed, _ := HashPasswordForTest("mySecretPass")
+			return &domainUser.User{ID: 10, Email: email, HashPassword: hashed}, nil
+		},
+	}
+	jwtMock := &mockJWTService{
+		generateTokenFn: func(userID int, tokenType string) (*security.AppToken, error) {
+			return &security.AppToken{Token: "reset-token", ExpirationTime: time.Now().Add(time.Hour)}, nil
+		},
+	}
+	mailer := &mockMailService{
+		sendFn: func(msg domainPorts.EmailMessage) error {
+			sent = true
+			if msg.Subject == "" {
+				return errors.New("missing subject")
+			}
+			return nil
+		},
+	}
+	logger := setupLogger(t)
+	uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger, mailer)
+
+	user, err := uc.ForgotPassword("test@example.com")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !sent {
+		t.Fatal("expected email to be sent")
+	}
+	if user == nil || user.Email != "test@example.com" {
+		t.Fatalf("expected returned user with email test@example.com, got %v", user)
 	}
 }
 
@@ -354,7 +403,7 @@ func TestAuthUseCase_AccessTokenByRefreshToken(t *testing.T) {
 			}
 
 			logger := setupLogger(t)
-			uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger)
+			uc := NewAuthUseCase(userRepoMock, &mockTokenRepository{}, jwtMock, logger, &mockMailService{})
 
 			user, authTokens, err := uc.AccessTokenByRefreshToken(tt.inputRefreshToken)
 			if (err != nil) != tt.wantErr {
